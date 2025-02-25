@@ -204,6 +204,10 @@ def program(args: argparse.Namespace, env: Environment) -> ExitStatus:
             args.follow = True  # --download implies --follow.
             downloader = Downloader(env, output_file=args.output_file, resume=args.download_resume)
             downloader.pre_request(args.headers)
+
+        if args.http_file:
+            print("################# Reading from HTTP file:", args.url)
+
         messages = collect_messages(env, args=args,
                                     request_body_read_callback=request_body_read_callback)
         force_separator = False
