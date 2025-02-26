@@ -204,6 +204,8 @@ class HTTPieArgumentParser(BaseHTTPieArgumentParser):
 
     def _process_url(self):
         if self.args.http_file:
+            # do not add default scheme
+            # treat URL as a filename if --http-file is specified
             return
         if self.args.url.startswith('://'):
             # Paste URL & add space shortcut: `http ://pie.dev` → `http://pie.dev`
