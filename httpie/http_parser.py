@@ -11,6 +11,35 @@ class HttpFileRequest:
 
 
 def http_parser(filename: str) -> list[HttpFileRequest]:
+    
+    def extract_headers(raw_text: str) -> dict :
+        '''
+        Extract the headers of the .http file
+        
+        Args:
+            raw_text: the lines of the .http file containing the headers
+        
+        Returns:
+            dict: containing the parsed headers
+        '''
+        return None
+    
+    def parse_body(raw_text: str) -> dict :
+        '''
+        parse the body of the .http file
+        '''
+        return None
+    
+    def parse_single_request(raw_text: str) -> HttpFileRequest:
+        '''Parse a single request from .http file format to HttpFileRequest '''
+        
+        return HttpFileRequest(
+            method=method,
+            url=url,
+            headers={},
+            body=b"",
+        )
+    
     http_file = Path(filename)
     if not http_file.exists():
         raise FileNotFoundError(f"File not found: {filename}")
