@@ -1,16 +1,57 @@
 from dataclasses import dataclass
 from pathlib import Path
+import re
+from __future__ import annotations
 
 
 @dataclass
 class HttpFileRequest:
     method: str
     url: str
-    headers: dict
-    body: bytes
+    headers: dict | None
+    body: bytes | None
+    dependencies: list[HttpFileRequest] | None
+    name: str | None
 
 
 def http_parser(filename: str) -> list[HttpFileRequest]:
+
+    def split_requests(http_file_contents:str) -> list[str]:
+        """makes a dictionnary from the raw http file that breaks it down into individual requests and returns a dictionary of their names """
+        return re.split(r"^###", http_file_contents, re.MULTILINE)
+
+    def get_dependencies(raw_http_request:str, poss_names: list[str]) -> list[str] | None: 
+        """returns a list of all the names of the requests that must be fufilled before this one can be sent"""
+        pattern = r"\{\{(.*?)\}\}"
+        matches = re.findall(pattern, raw_http_request)
+        if len(matches) == 0:
+            return None
+        names = [re.findall(r"^([A-Za-z0-9_]+).", match, re.MULTILINE) for match in matches]  
+        flat_names = [match for sublist in names for match in sublist]
+        if not all(name in poss_names for name in flat_names):
+            # TODO error not all dependencies exist
+            return None
+        return flat_names
+    
+    def get_name(raw_http_request:str) -> str | None:
+        """returns the name of the http request if it has one, None otherwise"""
+        matches = re.findall(r"^((//)|(#)) @name (.+)", raw_http_request, re.MULTILINE)
+        if len(matches) == 0:
+            return None
+        elif len(matches) == 1:
+            return matches[0]
+        else:
+            # TODO error too many names
+            return None
+    
+    def replace_global(http_file_contents_raw:str) -> str:
+        """finds and replaces all global variables by their values"""
+        # possible error when @variable=value is in the body
+        matches = re.findall(r"^@([A-Za-z0-9_]+)=(.+)$", http_file_contents_raw, re.MULTILINE)
+        http_file_contents_cooking = http_file_contents_raw
+        for variableName, value in matches:
+            http_file_contents_cooking = re.sub(rf"{{{{({re.escape(variableName)})}}}}",value , http_file_contents_cooking)
+        return http_file_contents_cooking
     
     def extract_headers(raw_text: list[str]) -> dict :
         '''
