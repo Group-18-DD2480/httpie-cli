@@ -1,8 +1,7 @@
+from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 import re
-from __future__ import annotations
-
 
 @dataclass
 class HttpFileRequest:
@@ -16,9 +15,18 @@ class HttpFileRequest:
 
 def http_parser(filename: str) -> list[HttpFileRequest]:
 
-    def split_requests(http_file_contents:str) -> list[str]:
-        """makes a dictionnary from the raw http file that breaks it down into individual requests and returns a dictionary of their names """
-        return re.split(r"^###", http_file_contents, re.MULTILINE)
+    def split_requests(http_file_contents: str) -> list[str]:
+        """Splits an HTTP file into individual requests but keeps the '###' in each request."""
+        parts = re.split(r"(^###.*)", http_file_contents, flags=re.MULTILINE)  
+        requests = []
+
+        for i in range(1, len(parts), 2):  
+            header = parts[i].strip()  
+            body = parts[i + 1].strip() if i + 1 < len(parts) else ""
+            requests.append(f"{header}\n{body}")
+
+        return requests
+
 
     def get_dependencies(raw_http_request:str, poss_names: list[str]) -> list[str] | None: 
         """returns a list of all the names of the requests that must be fufilled before this one can be sent"""
@@ -63,7 +71,17 @@ def http_parser(filename: str) -> list[HttpFileRequest]:
         Returns:
             dict: containing the parsed headers
         '''
-        return {}
+        headers = {}
+    
+        for line in raw_text:
+            if not line.strip() or ':' not in line:
+                continue
+            
+            header_name, header_value = line.split(':', 1)
+            
+            headers[header_name.strip()] = header_value.strip()
+                    
+        return headers
     
     def parse_body(raw_text: str) -> bytes :
         '''
@@ -97,6 +115,8 @@ def http_parser(filename: str) -> list[HttpFileRequest]:
             url=url,
             headers=extract_headers(raw_headers),
             body=parse_body("\n".join(raw_body)),
+            dependencies={},
+            name=get_name(raw_text)
         )
     
     http_file = Path(filename)
@@ -106,10 +126,17 @@ def http_parser(filename: str) -> list[HttpFileRequest]:
         raise IsADirectoryError(f"Path is not a file: {filename}")
     http_contents = http_file.read_text()
     
-    raw_requests = http_contents.split("###")
+    raw_requests = split_requests(replace_global(http_contents))
+    raw_requests = [req.strip() for req in raw_requests if req.strip()]
     parsed_requests = []
-    
+    req_names = []
+        
     for raw_req in raw_requests:
-        parsed_requests.append(parse_single_request(raw_req))
+        new_req = parse_single_request(raw_req)
+        new_req.dependencies = get_dependencies(raw_req,req_names)
+        if(new_req.name != None):
+            req_names.append(new_req.name)
+        
+        parsed_requests.append(new_req)
 
     return parsed_requests
