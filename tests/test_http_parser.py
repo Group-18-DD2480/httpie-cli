@@ -31,12 +31,12 @@ def normalize_whitespace(text):
 
 split_requests = extract_inner_function(http_parser, "split_requests")
 
-# Test case: Splitting multiple HTTP requests
-def test_split_multiple_requests():
-    """
-    This test verifies that split_requests correctly splits multiple HTTP requests
-    while preserving the '###' headers.
-    """
+def normalize_whitespace(text):
+    """Removes excessive newlines and spaces for consistent comparison."""
+    return "\n".join(line.rstrip() for line in text.splitlines()).strip()
+
+def test_split_requests():
+    # Test case: Multiple HTTP requests
     http_file = """### Request 1
 GET /users
 
