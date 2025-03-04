@@ -125,5 +125,92 @@ def test_split_request_without_header():
 
     assert split_requests(http_file) == expected_output
 
+# TESTS FOR get_dependencies
+
+get_dependencies = extract_inner_function(http_parser, "get_dependencies")
+
+# Test case: No dependencies in request
+def test_get_dependencies_no_placeholders():
+    """
+    This test verifies that if a request does not contain any {{placeholders}}, 
+    the function correctly returns None.
+    """
+    raw_request = """GET /users"""
+    possible_names = ["Request1", "Request2"]
+    
+    assert get_dependencies(raw_request, possible_names) is None
+
+# Test case: Extracting single valid dependency
+def test_get_dependencies_single_dependency():
+    """
+    This test checks that a single valid dependency is correctly extracted 
+    from a request and returned in a list.
+    """
+    raw_request = """GET /users/{{Request1.id}}"""
+    possible_names = ["Request1", "Request2"]
+    
+    expected_output = ["Request1"]
+    assert get_dependencies(raw_request, possible_names) == expected_output
+
+# Test case: Extracting multiple valid dependencies
+def test_get_dependencies_multiple_dependencies():
+    """
+    This test verifies that multiple dependencies are correctly identified 
+    and returned in a list.
+    """
+    raw_request = """POST /orders/{{Request1.order_id}}/{{Request2.user_id}}"""
+    possible_names = ["Request1", "Request2", "Request3"]
+    
+    expected_output = ["Request1", "Request2"]
+    assert get_dependencies(raw_request, possible_names) == expected_output
+
+# Test case: Handling dependencies that do not exist
+def test_get_dependencies_invalid_dependency():
+    """
+    This test ensures that if the request references a dependency that is 
+    not in the provided possible_names list, the function correctly returns None.
+    """
+    raw_request = """DELETE /items/{{InvalidRequest.item_id}}"""
+    possible_names = ["Request1", "Request2"]
+    
+    assert get_dependencies(raw_request, possible_names) is None
+
+# Test case: Dependencies with complex formatting (numbers, underscores)
+def test_get_dependencies_complex_names():
+    """
+    This test checks that dependencies with numbers and underscores 
+    are correctly extracted and returned.
+    """
+    raw_request = """PATCH /update/{{Request_1.field}}/{{Request2_2024.item}}"""
+    possible_names = ["Request_1", "Request2_2024", "Request3"]
+    
+    expected_output = ["Request_1", "Request2_2024"]
+    assert get_dependencies(raw_request, possible_names) == expected_output
+
+# Test case: Request with multiple occurrences of the same dependency
+def test_get_dependencies_repeated_dependency():
+    """
+    This test ensures that if the same dependency appears multiple times 
+    in the request, it is still only listed once in the output.
+    """
+    raw_request = """PUT /update/{{Request1.id}}/{{Request1.name}}"""
+    possible_names = ["Request1", "Request2"]
+    
+    expected_output = ["Request1"]  # Expect only one instance of "Request1"
+
+    assert get_dependencies(raw_request, possible_names) == expected_output
+
+
+# Test case: Empty input request
+def test_get_dependencies_empty_request():
+    """
+    This test checks that an empty request string returns None 
+    since there are no placeholders.
+    """
+    raw_request = ""
+    possible_names = ["Request1", "Request2"]
+    
+    assert get_dependencies(raw_request, possible_names) is None
+
 if __name__ == "__main__":
     pytest.main()
