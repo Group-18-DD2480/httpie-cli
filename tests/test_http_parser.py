@@ -16,8 +16,6 @@ def extract_inner_function(outer, inner):
 
     raise ValueError("inner function not found inside of outer")
 
-split_requests = extract_inner_function(http_parser, "split_requests")
-
 def normalize_whitespace(text):
     """
     Normalizes whitespace by:
@@ -27,6 +25,11 @@ def normalize_whitespace(text):
     lines = text.splitlines()
     normalized_lines = [line.strip() for line in lines if line.strip() != ""]
     return "\n".join(normalized_lines)
+
+
+# TESTS FOR split_requests
+
+split_requests = extract_inner_function(http_parser, "split_requests")
 
 # Test case: Splitting multiple HTTP requests
 def test_split_multiple_requests():

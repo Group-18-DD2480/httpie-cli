@@ -28,18 +28,22 @@ def http_parser(filename: str) -> list[HttpFileRequest]:
         return requests
 
 
-    def get_dependencies(raw_http_request:str, poss_names: list[str]) -> list[str] | None: 
-        """returns a list of all the names of the requests that must be fufilled before this one can be sent"""
+    def get_dependencies(raw_http_request: str, poss_names: list[str]) -> list[str] | None:
+        """Returns a list of all unique request names that must be fulfilled before this request can be sent."""
         pattern = r"\{\{(.*?)\}\}"
         matches = re.findall(pattern, raw_http_request)
-        if len(matches) == 0:
+        
+        if not matches:
             return None
+
         names = [re.findall(r"^([A-Za-z0-9_]+).", match, re.MULTILINE) for match in matches]  
-        flat_names = [match for sublist in names for match in sublist]
+        flat_names = list(set(match for sublist in names for match in sublist))  # Remove duplicates using set
+
         if not all(name in poss_names for name in flat_names):
-            # TODO error not all dependencies exist
-            return None
+            return None  # Returns None if any dependency is not found in possible names
+
         return flat_names
+
     
     def get_name(raw_http_request:str) -> str | None:
         """returns the name of the http request if it has one, None otherwise"""
