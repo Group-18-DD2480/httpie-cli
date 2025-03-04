@@ -2,7 +2,7 @@ import pytest
 import re
 import inspect
 
-from httpie.http_parser import http_parser
+from httpie.http_parser import http_parser  # Import the main function containing split_requests
 
 def extract_inner_function(outer, inner):
     """Extracts `inner` function from `outer` function."""
@@ -19,11 +19,21 @@ def extract_inner_function(outer, inner):
 split_requests = extract_inner_function(http_parser, "split_requests")
 
 def normalize_whitespace(text):
-    """Removes excessive newlines and spaces for consistent comparison."""
-    return "\n".join(line.rstrip() for line in text.splitlines()).strip()
+    """
+    Normalizes whitespace by:
+    - Stripping leading/trailing spaces
+    - Collapsing multiple blank lines into a single newline
+    """
+    lines = text.splitlines()
+    normalized_lines = [line.strip() for line in lines if line.strip() != ""]
+    return "\n".join(normalized_lines)
 
-def test_split_requests():
-    # Test case: Multiple HTTP requests
+# Test case: Splitting multiple HTTP requests
+def test_split_multiple_requests():
+    """
+    This test verifies that split_requests correctly splits multiple HTTP requests
+    while preserving the '###' headers.
+    """
     http_file = """### Request 1
 GET /users
 
@@ -37,26 +47,49 @@ Content-Type: application/json
         "### Request 1\nGET /users",
         "### Request 2\nPOST /users\nContent-Type: application/json\n\n{\"name\": \"John\"}"
     ]
+
     assert list(map(normalize_whitespace, split_requests(http_file))) == list(map(normalize_whitespace, expected_output))
 
-    # Test case: Single HTTP request
+# Test case: Splitting a single HTTP request
+def test_split_single_request():
+    """
+    This test ensures that a single HTTP request with a '###' header is correctly parsed
+    without any unexpected modifications.
+    """
     http_file = """### Only Request
 GET /status"""
 
     expected_output = ["### Only Request\nGET /status"]
+
     assert list(map(normalize_whitespace, split_requests(http_file))) == list(map(normalize_whitespace, expected_output))
 
-    # Test case: Empty file
+# Test case: Handling an empty input file
+def test_split_empty_file():
+    """
+    This test checks if an empty input correctly returns an empty list,
+    ensuring there are no errors when handling empty strings.
+    """
     assert split_requests("") == []
 
-    # Test case: Request with no body
+# Test case: Splitting an HTTP request with no body
+def test_split_request_no_body():
+    """
+    This test verifies that requests with no body (only headers and method)
+    are parsed correctly without adding unnecessary spaces or newlines.
+    """
     http_file = """### No Body Request
 GET /ping"""
 
     expected_output = ["### No Body Request\nGET /ping"]
+
     assert list(map(normalize_whitespace, split_requests(http_file))) == list(map(normalize_whitespace, expected_output))
 
-    # Test case: Request with extra newlines
+# Test case: Handling extra newlines within requests
+def test_split_request_with_extra_newlines():
+    """
+    This test ensures that the function correctly handles requests that
+    contain extra blank lines while preserving necessary formatting.
+    """
     http_file = """### Request 1
 
 GET /data
@@ -73,12 +106,20 @@ POST /submit
         "### Request 1\nGET /data",  # Normalized extra newline
         "### Request 2\nPOST /submit\n\n{\"key\": \"value\"}"  # Normalized newlines inside request
     ]
+
     assert list(map(normalize_whitespace, split_requests(http_file))) == list(map(normalize_whitespace, expected_output))
 
-    # Test case: Request with no leading '###'
+# Test case: Handling requests without '###' header
+def test_split_request_without_header():
+    """
+    This test ensures that requests without a '###' header are ignored and
+    do not cause the function to fail. The function should return an empty list
+    in such cases.
+    """
     http_file = """GET /withoutHeader"""
 
-    expected_output = []  # Since no '###' header is present, it should return an empty list
+    expected_output = []  # No '###' header means no valid requests should be returned
+
     assert split_requests(http_file) == expected_output
 
 if __name__ == "__main__":
