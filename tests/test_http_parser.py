@@ -1,7 +1,6 @@
 import pytest
 
 from httpie.http_parser import (
-    http_parser,
     split_requests,
     get_dependencies,
     get_name,
@@ -29,18 +28,15 @@ POST /users
 Content-Type: application/json
 
 {"name": "John"}"""
-
     expected_output = [
         "### Request 1\nGET /users",
         "### Request 2\nPOST /users\nContent-Type: application/json\n\n{\"name\": \"John\"}"
     ]
-
     assert list(map(normalize_whitespace, split_requests(http_file))) == list(
         map(normalize_whitespace, expected_output)
     )
 
 
-# Test case: Splitting a single HTTP request
 def test_split_single_request():
     """
     This test ensures that a single HTTP request with a '###' header is correctly parsed
@@ -48,15 +44,12 @@ def test_split_single_request():
     """
     http_file = """### Only Request
 GET /status"""
-
     expected_output = ["### Only Request\nGET /status"]
-
     assert list(map(normalize_whitespace, split_requests(http_file))) == list(
         map(normalize_whitespace, expected_output)
     )
 
 
-# Test case: Handling an empty input file
 def test_split_empty_file():
     """
     This test checks if an empty input correctly returns an empty list,
@@ -65,7 +58,6 @@ def test_split_empty_file():
     assert split_requests("") == []
 
 
-# Test case: Splitting an HTTP request with no body
 def test_split_request_no_body():
     """
     This test verifies that requests with no body (only headers and method)
@@ -73,15 +65,12 @@ def test_split_request_no_body():
     """
     http_file = """### No Body Request
 GET /ping"""
-
     expected_output = ["### No Body Request\nGET /ping"]
-
     assert list(map(normalize_whitespace, split_requests(http_file))) == list(
         map(normalize_whitespace, expected_output)
     )
 
 
-# Test case: Handling extra newlines within requests
 def test_split_request_with_extra_newlines():
     """
     This test ensures that the function correctly handles requests that
@@ -98,18 +87,15 @@ POST /submit
 
 {"key": "value"}
 """
-
     expected_output = [
         "### Request 1\nGET /data",  # Normalized extra newline
         "### Request 2\nPOST /submit\n\n{\"key\": \"value\"}"  # Normalized newlines inside request
     ]
-
     assert list(map(normalize_whitespace, split_requests(http_file))) == list(
         map(normalize_whitespace, expected_output)
     )
 
 
-# Test case: Handling requests without '###' header
 def test_split_request_without_header():
     """
     This test ensures that requests without a '###' header are ignored and
@@ -117,9 +103,7 @@ def test_split_request_without_header():
     in such cases.
     """
     http_file = """GET /withoutHeader"""
-
     expected_output = []  # No '###' header means no valid requests should be returned
-
     assert split_requests(http_file) == expected_output
 
 
@@ -132,7 +116,6 @@ def test_get_dependencies_no_placeholders():
     """
     raw_request = """GET /users"""
     possible_names = ["Request1", "Request2"]
-
     assert get_dependencies(raw_request, possible_names) is None
 
 
@@ -143,7 +126,6 @@ def test_get_dependencies_single_dependency():
     """
     raw_request = """GET /users/{{Request1.id}}"""
     possible_names = ["Request1", "Request2"]
-
     expected_output = ["Request1"]
     assert get_dependencies(raw_request, possible_names) == expected_output
 
@@ -155,9 +137,7 @@ def test_get_dependencies_multiple_dependencies():
     """
     raw_request = """POST /orders/{{Request1.order_id}}/{{Request2.user_id}}"""
     possible_names = ["Request1", "Request2", "Request3"]
-
     expected_output = ["Request1", "Request2"]
-
     assert sorted(get_dependencies(raw_request, possible_names)) == sorted(expected_output)
 
 
@@ -168,7 +148,6 @@ def test_get_dependencies_invalid_dependency():
     """
     raw_request = """DELETE /items/{{InvalidRequest.item_id}}"""
     possible_names = ["Request1", "Request2"]
-
     assert get_dependencies(raw_request, possible_names) is None
 
 
@@ -179,9 +158,7 @@ def test_get_dependencies_complex_names():
     """
     raw_request = """PATCH /update/{{Request_1.field}}/{{Request2_2024.item}}"""
     possible_names = ["Request_1", "Request2_2024", "Request3"]
-
     expected_output = ["Request_1", "Request2_2024"]
-
     assert sorted(get_dependencies(raw_request, possible_names)) == sorted(expected_output)
 
 
@@ -192,9 +169,7 @@ def test_get_dependencies_repeated_dependency():
     """
     raw_request = """PUT /update/{{Request1.id}}/{{Request1.name}}"""
     possible_names = ["Request1", "Request2"]
-
     expected_output = ["Request1"]  # Expect only one instance of "Request1"
-
     assert get_dependencies(raw_request, possible_names) == expected_output
 
 
@@ -205,7 +180,6 @@ def test_get_dependencies_empty_request():
     """
     raw_request = ""
     possible_names = ["Request1", "Request2"]
-
     assert get_dependencies(raw_request, possible_names) is None
 
 
@@ -218,7 +192,6 @@ def test_get_name_with_hash_comment():
     """
     raw_request = """# @name Request1
 GET /users"""
-
     expected_output = "Request1"
     assert get_name(raw_request) == expected_output
 
@@ -230,7 +203,6 @@ def test_get_name_with_double_slash_comment():
     """
     raw_request = """// @name GetUser
 GET /users/{id}"""
-
     expected_output = "GetUser"
     assert get_name(raw_request) == expected_output
 
@@ -240,7 +212,6 @@ def test_get_name_no_name():
     Ensures that if no '@name' is present, get_name returns None.
     """
     raw_request = """GET /users"""
-
     assert get_name(raw_request) is None
 
 
@@ -253,7 +224,6 @@ def test_get_name_multiple_names():
 GET /users
 # @name SecondName
 POST /users"""
-
     assert get_name(raw_request) is None  # Multiple names should result in None
 
 
@@ -263,7 +233,6 @@ def test_get_name_with_extra_whitespace():
     """
     raw_request = """  #   @name   MyRequest   
 GET /data"""
-
     expected_output = "MyRequest"
     assert get_name(raw_request) == expected_output
 
@@ -273,7 +242,6 @@ def test_get_name_without_request():
     Ensures that a request with only an @name definition still correctly extracts the name.
     """
     raw_request = """// @name LoneRequest"""
-
     expected_output = "LoneRequest"
     assert get_name(raw_request) == expected_output
 
@@ -284,7 +252,6 @@ def test_get_name_inline_invalid():
     and does not extract names from inline comments.
     """
     raw_request = """GET /users # @name InlineName"""
-
     assert get_name(raw_request) is None  # Inline @name should not be detected
 
 
@@ -296,7 +263,6 @@ def test_get_name_mixed_comment_styles():
     raw_request = """# @name FirstRequest
 // @name SecondRequest
 GET /items"""
-
     assert get_name(raw_request) is None
 
 
