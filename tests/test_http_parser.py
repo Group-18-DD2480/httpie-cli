@@ -1,8 +1,15 @@
 import pytest
-import re
-import inspect
 
-from httpie.http_parser import http_parser, split_requests, get_dependencies, get_name, replace_global, extract_headers, parse_body, parse_single_request
+from httpie.http_parser import (
+    http_parser,
+    split_requests,
+    get_dependencies,
+    get_name,
+    replace_global,
+    extract_headers,
+    parse_body,
+    parse_single_request,
+)
 
 
 def normalize_whitespace(text):
@@ -10,8 +17,7 @@ def normalize_whitespace(text):
     return "\n".join(line.rstrip() for line in text.splitlines()).strip()
 
 
-## TESTS FOR split_requests -->> REQ_002
-
+# TESTS FOR split_requests -->> REQ_002
 
 def test_split_requests():
     # Test case: Multiple HTTP requests
@@ -29,7 +35,10 @@ Content-Type: application/json
         "### Request 2\nPOST /users\nContent-Type: application/json\n\n{\"name\": \"John\"}"
     ]
 
-    assert list(map(normalize_whitespace, split_requests(http_file))) == list(map(normalize_whitespace, expected_output))
+    assert list(map(normalize_whitespace, split_requests(http_file))) == list(
+        map(normalize_whitespace, expected_output)
+    )
+
 
 # Test case: Splitting a single HTTP request
 def test_split_single_request():
@@ -42,7 +51,10 @@ GET /status"""
 
     expected_output = ["### Only Request\nGET /status"]
 
-    assert list(map(normalize_whitespace, split_requests(http_file))) == list(map(normalize_whitespace, expected_output))
+    assert list(map(normalize_whitespace, split_requests(http_file))) == list(
+        map(normalize_whitespace, expected_output)
+    )
+
 
 # Test case: Handling an empty input file
 def test_split_empty_file():
@@ -51,6 +63,7 @@ def test_split_empty_file():
     ensuring there are no errors when handling empty strings.
     """
     assert split_requests("") == []
+
 
 # Test case: Splitting an HTTP request with no body
 def test_split_request_no_body():
@@ -63,7 +76,10 @@ GET /ping"""
 
     expected_output = ["### No Body Request\nGET /ping"]
 
-    assert list(map(normalize_whitespace, split_requests(http_file))) == list(map(normalize_whitespace, expected_output))
+    assert list(map(normalize_whitespace, split_requests(http_file))) == list(
+        map(normalize_whitespace, expected_output)
+    )
+
 
 # Test case: Handling extra newlines within requests
 def test_split_request_with_extra_newlines():
@@ -88,7 +104,10 @@ POST /submit
         "### Request 2\nPOST /submit\n\n{\"key\": \"value\"}"  # Normalized newlines inside request
     ]
 
-    assert list(map(normalize_whitespace, split_requests(http_file))) == list(map(normalize_whitespace, expected_output))
+    assert list(map(normalize_whitespace, split_requests(http_file))) == list(
+        map(normalize_whitespace, expected_output)
+    )
+
 
 # Test case: Handling requests without '###' header
 def test_split_request_without_header():
@@ -103,9 +122,9 @@ def test_split_request_without_header():
 
     assert split_requests(http_file) == expected_output
 
-## TESTS FOR get_dependencies  -->> REQ_007
 
-# Test case: No dependencies in request
+# TESTS FOR get_dependencies  -->> REQ_007
+
 def test_get_dependencies_no_placeholders():
     """
     This test verifies that if a request does not contain any {{placeholders}}, 
@@ -113,10 +132,10 @@ def test_get_dependencies_no_placeholders():
     """
     raw_request = """GET /users"""
     possible_names = ["Request1", "Request2"]
-    
+
     assert get_dependencies(raw_request, possible_names) is None
 
-# Test case: Extracting single valid dependency
+
 def test_get_dependencies_single_dependency():
     """
     This test checks that a single valid dependency is correctly extracted 
@@ -124,11 +143,11 @@ def test_get_dependencies_single_dependency():
     """
     raw_request = """GET /users/{{Request1.id}}"""
     possible_names = ["Request1", "Request2"]
-    
+
     expected_output = ["Request1"]
     assert get_dependencies(raw_request, possible_names) == expected_output
 
-# Test case: Extracting multiple valid dependencies
+
 def test_get_dependencies_multiple_dependencies():
     """
     This test verifies that multiple dependencies are correctly identified 
@@ -136,13 +155,12 @@ def test_get_dependencies_multiple_dependencies():
     """
     raw_request = """POST /orders/{{Request1.order_id}}/{{Request2.user_id}}"""
     possible_names = ["Request1", "Request2", "Request3"]
-    
+
     expected_output = ["Request1", "Request2"]
-    
+
     assert sorted(get_dependencies(raw_request, possible_names)) == sorted(expected_output)
 
 
-# Test case: Handling dependencies that do not exist
 def test_get_dependencies_invalid_dependency():
     """
     This test ensures that if the request references a dependency that is 
@@ -150,10 +168,10 @@ def test_get_dependencies_invalid_dependency():
     """
     raw_request = """DELETE /items/{{InvalidRequest.item_id}}"""
     possible_names = ["Request1", "Request2"]
-    
+
     assert get_dependencies(raw_request, possible_names) is None
 
-# Test case: Dependencies with complex formatting (numbers, underscores)
+
 def test_get_dependencies_complex_names():
     """
     This test checks that dependencies with numbers and underscores 
@@ -161,13 +179,12 @@ def test_get_dependencies_complex_names():
     """
     raw_request = """PATCH /update/{{Request_1.field}}/{{Request2_2024.item}}"""
     possible_names = ["Request_1", "Request2_2024", "Request3"]
-    
+
     expected_output = ["Request_1", "Request2_2024"]
-    
+
     assert sorted(get_dependencies(raw_request, possible_names)) == sorted(expected_output)
 
 
-# Test case: Request with multiple occurrences of the same dependency
 def test_get_dependencies_repeated_dependency():
     """
     This test ensures that if the same dependency appears multiple times 
@@ -175,13 +192,12 @@ def test_get_dependencies_repeated_dependency():
     """
     raw_request = """PUT /update/{{Request1.id}}/{{Request1.name}}"""
     possible_names = ["Request1", "Request2"]
-    
+
     expected_output = ["Request1"]  # Expect only one instance of "Request1"
 
     assert get_dependencies(raw_request, possible_names) == expected_output
 
 
-# Test case: Empty input request
 def test_get_dependencies_empty_request():
     """
     This test checks that an empty request string returns None 
@@ -189,13 +205,12 @@ def test_get_dependencies_empty_request():
     """
     raw_request = ""
     possible_names = ["Request1", "Request2"]
-    
+
     assert get_dependencies(raw_request, possible_names) is None
 
 
-## TESTS FOR get_name --> REQ_003
+# TESTS FOR get_name --> REQ_003
 
-# Test: Valid request name with '#' comment
 def test_get_name_with_hash_comment():
     """
     Ensures that get_name correctly extracts a request name 
@@ -203,11 +218,11 @@ def test_get_name_with_hash_comment():
     """
     raw_request = """# @name Request1
 GET /users"""
-    
+
     expected_output = "Request1"
     assert get_name(raw_request) == expected_output
 
-# Test: Valid request name with '//' comment
+
 def test_get_name_with_double_slash_comment():
     """
     Ensures that get_name correctly extracts a request name 
@@ -215,20 +230,20 @@ def test_get_name_with_double_slash_comment():
     """
     raw_request = """// @name GetUser
 GET /users/{id}"""
-    
+
     expected_output = "GetUser"
     assert get_name(raw_request) == expected_output
 
-# Test: Request without a name
+
 def test_get_name_no_name():
     """
     Ensures that if no '@name' is present, get_name returns None.
     """
     raw_request = """GET /users"""
-    
+
     assert get_name(raw_request) is None
 
-# Test: Multiple @name occurrences (invalid case)
+
 def test_get_name_multiple_names():
     """
     Ensures that if multiple '@name' occurrences exist, 
@@ -238,41 +253,41 @@ def test_get_name_multiple_names():
 GET /users
 # @name SecondName
 POST /users"""
-    
+
     assert get_name(raw_request) is None  # Multiple names should result in None
 
-# Test: Request with extra whitespace
+
 def test_get_name_with_extra_whitespace():
     """
     Ensures that extra spaces around @name do not affect the extracted name.
     """
     raw_request = """  #   @name   MyRequest   
 GET /data"""
-    
+
     expected_output = "MyRequest"
     assert get_name(raw_request) == expected_output
 
-# Test: Request with name but no actual request content
+
 def test_get_name_without_request():
     """
     Ensures that a request with only an @name definition still correctly extracts the name.
     """
     raw_request = """// @name LoneRequest"""
-    
+
     expected_output = "LoneRequest"
     assert get_name(raw_request) == expected_output
 
-# Test: Request with an inline @name (invalid case)
+
 def test_get_name_inline_invalid():
     """
     Ensures that @name only works when it starts a line, 
     and does not extract names from inline comments.
     """
     raw_request = """GET /users # @name InlineName"""
-    
+
     assert get_name(raw_request) is None  # Inline @name should not be detected
 
-# Test: Request with mixed comment styles
+
 def test_get_name_mixed_comment_styles():
     """
     Ensures that if multiple valid @name comments exist,
@@ -281,12 +296,11 @@ def test_get_name_mixed_comment_styles():
     raw_request = """# @name FirstRequest
 // @name SecondRequest
 GET /items"""
-    
+
     assert get_name(raw_request) is None
 
 
-## TESTS FOR replace_global --> REQ_005
-
+# TESTS FOR replace_global --> REQ_005
 
 def test_replace_global_no_definitions():
     """
@@ -296,6 +310,7 @@ def test_replace_global_no_definitions():
     raw_contents = "GET /users/{{id}}"
     expected_output = raw_contents  # No replacement should occur
     assert replace_global(raw_contents) == expected_output
+
 
 def test_replace_global_single_variable():
     """
@@ -307,6 +322,7 @@ GET http://{{host}}/users"""
     expected_output = """@host=example.com
 GET http://example.com/users"""
     assert replace_global(raw_contents) == expected_output
+
 
 def test_replace_global_multiple_variables():
     """
@@ -321,6 +337,7 @@ GET http://{{host}}:{{port}}/users"""
 GET http://example.com:8080/users"""
     assert replace_global(raw_contents) == expected_output
 
+
 def test_replace_global_multiple_occurrences():
     """
     Ensures that if a variable appears multiple times in the file,
@@ -332,6 +349,7 @@ GET /api?param={{name}}&other={{name}}"""
 GET /api?param=Test&other=Test"""
     assert replace_global(raw_contents) == expected_output
 
+
 def test_replace_global_value_with_spaces():
     """
     Ensures that global variable definitions with spaces in their values are handled correctly.
@@ -341,6 +359,7 @@ GET /message?text={{greeting}}"""
     expected_output = """@greeting=Hello World
 GET /message?text=Hello World"""
     assert replace_global(raw_contents) == expected_output
+
 
 def test_replace_global_definition_without_placeholder():
     """
@@ -353,32 +372,39 @@ GET /info"""
     assert replace_global(raw_contents) == expected_output
 
 
-## TESTS FOR extract_headers --> REQ_003
+# TESTS FOR extract_headers --> REQ_003
 
-
-# Test 1: Empty list should return an empty dictionary.
 def test_extract_headers_empty():
+    """
+    Test 1: Empty list should return an empty dictionary.
+    """
     raw_text = []
     expected = {}
     assert extract_headers(raw_text) == expected
 
 
-# Test 2: Lines that are empty or only whitespace should be ignored.
 def test_extract_headers_only_empty_lines():
+    """
+    Test 2: Lines that are empty or only whitespace should be ignored.
+    """
     raw_text = ["", "   ", "\t"]
     expected = {}
     assert extract_headers(raw_text) == expected
 
 
-# Test 3: A single valid header line.
 def test_extract_headers_single_header():
+    """
+    Test 3: A single valid header line.
+    """
     raw_text = ["Content-Type: application/json"]
     expected = {"Content-Type": "application/json"}
     assert extract_headers(raw_text) == expected
 
 
-# Test 4: Multiple header lines should be parsed into a dictionary.
 def test_extract_headers_multiple_headers():
+    """
+    Test 4: Multiple header lines should be parsed into a dictionary.
+    """
     raw_text = [
         "Content-Type: application/json",
         "Authorization: Bearer token123"
@@ -390,8 +416,10 @@ def test_extract_headers_multiple_headers():
     assert extract_headers(raw_text) == expected
 
 
-# Test 5: Lines without a colon should be ignored.
 def test_extract_headers_line_without_colon():
+    """
+    Test 5: Lines without a colon should be ignored.
+    """
     raw_text = [
         "This is not a header",
         "Content-Length: 123"
@@ -400,8 +428,10 @@ def test_extract_headers_line_without_colon():
     assert extract_headers(raw_text) == expected
 
 
-# Test 6: Extra whitespace around header names and values should be trimmed.
 def test_extract_headers_extra_spaces():
+    """
+    Test 6: Extra whitespace around header names and values should be trimmed.
+    """
     raw_text = [
         "  Accept : text/html  "
     ]
@@ -409,8 +439,10 @@ def test_extract_headers_extra_spaces():
     assert extract_headers(raw_text) == expected
 
 
-# Test 7: Only the first colon should be used to split the header name and value.
 def test_extract_headers_multiple_colons():
+    """
+    Test 7: Only the first colon should be used to split the header name and value.
+    """
     raw_text = [
         "Custom-Header: value:with:colons"
     ]
@@ -418,8 +450,10 @@ def test_extract_headers_multiple_colons():
     assert extract_headers(raw_text) == expected
 
 
-# Test 8: If a header appears more than once, the last occurrence should overwrite previous ones.
 def test_extract_headers_duplicate_headers():
+    """
+    Test 8: If a header appears more than once, the last occurrence should overwrite previous ones.
+    """
     raw_text = [
         "X-Header: one",
         "X-Header: two"
@@ -428,11 +462,11 @@ def test_extract_headers_duplicate_headers():
     assert extract_headers(raw_text) == expected
 
 
-## TESTS FOR parse_body -->> REQ_002
-
+# TESTS FOR parse_body -->> REQ_002
 # TODO: create tests after function definition is done
 
-## TESTS FOR parse_single_request -->> REQ_002
+
+# TESTS FOR parse_single_request -->> REQ_002
 
 def test_parse_single_request_minimal():
     """
@@ -453,6 +487,7 @@ def test_parse_single_request_minimal():
     assert result.body == expected_body
     assert result.dependencies == {}
     assert result.name is None
+
 
 def test_parse_single_request_with_headers_and_body():
     """
@@ -482,6 +517,7 @@ Authorization: Bearer token
     assert result.dependencies == {}
     assert result.name is None
 
+
 def test_parse_single_request_with_name():
     """
     Tests a request that includes a @name comment.
@@ -505,6 +541,7 @@ Hello, world!
     assert result.body == expected_body
     assert result.dependencies == {}
     assert result.name == "MyTestRequest"
+
 
 def test_parse_single_request_extra_blank_lines():
     """
@@ -531,6 +568,7 @@ Line two of the body.
     assert result.dependencies == {}
     assert result.name is None
 
+
 def test_parse_single_request_ignore_comments():
     """
     Tests that lines starting with '#' (comments) are removed from the parsed headers.
@@ -554,6 +592,7 @@ Content-Length: 123
     assert result.body == expected_body
     assert result.dependencies == {}
     assert result.name == "CommentedRequest"
+
 
 if __name__ == "__main__":
     pytest.main()
