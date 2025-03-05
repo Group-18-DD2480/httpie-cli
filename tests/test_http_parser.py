@@ -27,7 +27,7 @@ def normalize_whitespace(text):
     return "\n".join(normalized_lines)
 
 
-# TESTS FOR split_requests
+# TESTS FOR split_requests -->> REQ_002
 
 split_requests = extract_inner_function(http_parser, "split_requests")
 
@@ -125,7 +125,7 @@ def test_split_request_without_header():
 
     assert split_requests(http_file) == expected_output
 
-# TESTS FOR get_dependencies
+# TESTS FOR get_dependencies  -->> REQ_007
 
 get_dependencies = extract_inner_function(http_parser, "get_dependencies")
 
@@ -215,6 +215,11 @@ def test_get_dependencies_empty_request():
     possible_names = ["Request1", "Request2"]
     
     assert get_dependencies(raw_request, possible_names) is None
+
+
+# TESTS FOR get_name
+
+get_name = extract_inner_function(http_parser, "get_name")
 
 if __name__ == "__main__":
     pytest.main()
