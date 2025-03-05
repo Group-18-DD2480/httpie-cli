@@ -2,38 +2,16 @@ import pytest
 import re
 import inspect
 
-from httpie.http_parser import http_parser  # Import the main function containing split_requests
+from httpie.http_parser import http_parser, split_requests, get_dependencies, get_name, replace_global, extract_headers, parse_body, parse_single_request
 
-def extract_inner_function(outer, inner): # used to extract nested function definitions
-    """Extracts `inner` function from `outer` function."""
-    source_code = inspect.getsource(outer)  # Get the source of http_parser
-    function_definitions = source_code.split("def ")  # Split by function definitions
-
-    for func in function_definitions:
-        if func.startswith(inner):  # Find split_requests
-            exec("def " + func, globals())  # Define it globally
-            return globals()[inner]  # Return extracted function
-
-    raise ValueError("inner function not found inside of outer")
-
-def normalize_whitespace(text):
-    """
-    Normalizes whitespace by:
-    - Stripping leading/trailing spaces
-    - Collapsing multiple blank lines into a single newline
-    """
-    lines = text.splitlines()
-    normalized_lines = [line.strip() for line in lines if line.strip() != ""]
-    return "\n".join(normalized_lines)
-
-
-## TESTS FOR split_requests -->> REQ_002
-
-split_requests = extract_inner_function(http_parser, "split_requests")
 
 def normalize_whitespace(text):
     """Removes excessive newlines and spaces for consistent comparison."""
     return "\n".join(line.rstrip() for line in text.splitlines()).strip()
+
+
+## TESTS FOR split_requests -->> REQ_002
+
 
 def test_split_requests():
     # Test case: Multiple HTTP requests
@@ -127,8 +105,6 @@ def test_split_request_without_header():
 
 ## TESTS FOR get_dependencies  -->> REQ_007
 
-get_dependencies = extract_inner_function(http_parser, "get_dependencies")
-
 # Test case: No dependencies in request
 def test_get_dependencies_no_placeholders():
     """
@@ -218,8 +194,6 @@ def test_get_dependencies_empty_request():
 
 
 ## TESTS FOR get_name --> REQ_003
-
-get_name = extract_inner_function(http_parser, "get_name")
 
 # Test: Valid request name with '#' comment
 def test_get_name_with_hash_comment():
@@ -313,7 +287,6 @@ GET /items"""
 
 ## TESTS FOR replace_global --> REQ_005
 
-replace_global = extract_inner_function(http_parser, "replace_global")
 
 def test_replace_global_no_definitions():
     """
@@ -381,8 +354,6 @@ GET /info"""
 
 
 ## TESTS FOR extract_headers --> REQ_003
-
-extract_headers = extract_inner_function(http_parser, "extract_headers")
 
 
 # Test 1: Empty list should return an empty dictionary.
@@ -456,6 +427,133 @@ def test_extract_headers_duplicate_headers():
     expected = {"X-Header": "two"}
     assert extract_headers(raw_text) == expected
 
+
+## TESTS FOR parse_body -->> REQ_002
+
+# TODO: create tests after function definition is done
+
+## TESTS FOR parse_single_request -->> REQ_002
+
+def test_parse_single_request_minimal():
+    """
+    A minimal HTTP request that only contains the request line (method and URL).
+    Expected:
+      - method and URL are parsed correctly.
+      - headers is an empty dict.
+      - body is empty (after processing by parse_body).
+      - dependencies is an empty dict.
+      - name is None (since no @name comment exists).
+    """
+    raw_text = "GET http://example.com"
+    result = parse_single_request(raw_text)
+    assert result.method == "GET"
+    assert result.url == "http://example.com"
+    assert result.headers == {}
+    expected_body = parse_body("")
+    assert result.body == expected_body
+    assert result.dependencies == {}
+    assert result.name is None
+
+def test_parse_single_request_with_headers_and_body():
+    """
+    Tests a request that includes a request line, headers, and a body.
+    Expected:
+      - Correctly parsed method and URL.
+      - Headers are extracted into a dictionary.
+      - The body is passed through parse_body and matches the expected output.
+      - No @name is defined, so name is None.
+    """
+    raw_text = """POST http://example.com/api
+Content-Type: application/json
+Authorization: Bearer token
+
+{
+  "key": "value"
+}"""
+    result = parse_single_request(raw_text)
+    assert result.method == "POST"
+    assert result.url == "http://example.com/api"
+    assert result.headers == {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer token"
+    }
+    expected_body = parse_body("{\n  \"key\": \"value\"\n}")
+    assert result.body == expected_body
+    assert result.dependencies == {}
+    assert result.name is None
+
+def test_parse_single_request_with_name():
+    """
+    Tests a request that includes a @name comment.
+    The @name line is removed from the parsed lines (since lines starting with '#' are filtered out)
+    but get_name is still applied on the original raw text.
+    Expected:
+      - name is extracted as defined by get_name.
+      - Other fields (method, URL, headers, body) are parsed normally.
+    """
+    raw_text = """# @name MyTestRequest
+GET http://example.com
+Content-Type: text/plain
+
+Hello, world!
+"""
+    result = parse_single_request(raw_text)
+    assert result.method == "GET"
+    assert result.url == "http://example.com"
+    assert result.headers == {"Content-Type": "text/plain"}
+    expected_body = parse_body("Hello, world!")
+    assert result.body == expected_body
+    assert result.dependencies == {}
+    assert result.name == "MyTestRequest"
+
+def test_parse_single_request_extra_blank_lines():
+    """
+    Tests that multiple blank lines (which trigger the switch from headers to body)
+    are handled properly.
+    Expected:
+      - The request line is parsed.
+      - Headers are extracted before the first blank line.
+      - Everything after the blank lines is treated as the body.
+    """
+    raw_text = """PUT http://example.com/update
+Accept: application/json
+
+
+Line one of the body.
+Line two of the body.
+"""
+    result = parse_single_request(raw_text)
+    assert result.method == "PUT"
+    assert result.url == "http://example.com/update"
+    assert result.headers == {"Accept": "application/json"}
+    expected_body = parse_body("Line one of the body.\nLine two of the body.")
+    assert result.body == expected_body
+    assert result.dependencies == {}
+    assert result.name is None
+
+def test_parse_single_request_ignore_comments():
+    """
+    Tests that lines starting with '#' (comments) are removed from the parsed headers.
+    Note: Even if the @name line is a comment, get_name is called on the original raw text,
+    so it may still extract a name.
+    Expected:
+      - Headers only include valid header lines.
+      - The @name is still extracted if present in the raw text.
+    """
+    raw_text = """# @name CommentedRequest
+GET http://example.com/data
+# This comment should be ignored
+Content-Length: 123
+
+"""
+    result = parse_single_request(raw_text)
+    assert result.method == "GET"
+    assert result.url == "http://example.com/data"
+    assert result.headers == {"Content-Length": "123"}
+    expected_body = parse_body("")
+    assert result.body == expected_body
+    assert result.dependencies == {}
+    assert result.name == "CommentedRequest"
 
 if __name__ == "__main__":
     pytest.main()
