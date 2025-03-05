@@ -44,17 +44,15 @@ def http_parser(filename: str) -> list[HttpFileRequest]:
 
         return flat_names
 
-    
-    import re
 
     def get_name(raw_http_request: str) -> str | None:
         """
         Returns the name of the HTTP request if it has one, None otherwise.
-        The expected pattern is either a comment starting with '//' or '#' followed by '@name' and the name.
+        The expected pattern is either a comment starting with '//' or '#' (optionally preceded by whitespace)
+        followed by '@name' and the name.
         """
-        # This regex matches lines starting with '//' or '#' followed by optional whitespace, 
-        # then '@name', more whitespace, and captures the rest of the line as the name.
-        matches = re.findall(r"^(?://|#)\s*@name\s+(.+)$", raw_http_request, re.MULTILINE)
+        # Allow leading whitespace before the comment marker.
+        matches = re.findall(r"^\s*(?://|#)\s*@name\s+(.+)$", raw_http_request, re.MULTILINE)
         
         if len(matches) == 0:
             return None
@@ -63,6 +61,7 @@ def http_parser(filename: str) -> list[HttpFileRequest]:
         else:
             # TODO: Handle error for multiple names found. Currently returns None.
             return None
+
 
     
     def replace_global(http_file_contents_raw:str) -> str:

@@ -4,20 +4,28 @@ cachedir: .pytest_cache
 rootdir: /home/josephus/Desktop/httpie-cli
 configfile: pytest.ini
 plugins: httpbin-2.0.0, anyio-4.2.0
-collecting ... collected 13 items
+collecting ... collected 21 items
 
-tests/test_http_parser.py::test_split_multiple_requests PASSED           [  7%]
-tests/test_http_parser.py::test_split_single_request PASSED              [ 15%]
-tests/test_http_parser.py::test_split_empty_file PASSED                  [ 23%]
-tests/test_http_parser.py::test_split_request_no_body PASSED             [ 30%]
-tests/test_http_parser.py::test_split_request_with_extra_newlines PASSED [ 38%]
-tests/test_http_parser.py::test_split_request_without_header PASSED      [ 46%]
-tests/test_http_parser.py::test_get_dependencies_no_placeholders PASSED  [ 53%]
-tests/test_http_parser.py::test_get_dependencies_single_dependency PASSED [ 61%]
-tests/test_http_parser.py::test_get_dependencies_multiple_dependencies PASSED [ 69%]
-tests/test_http_parser.py::test_get_dependencies_invalid_dependency PASSED [ 76%]
-tests/test_http_parser.py::test_get_dependencies_complex_names PASSED    [ 84%]
-tests/test_http_parser.py::test_get_dependencies_repeated_dependency PASSED [ 92%]
-tests/test_http_parser.py::test_get_dependencies_empty_request PASSED    [100%]
+tests/test_http_parser.py::test_split_multiple_requests PASSED           [  4%]
+tests/test_http_parser.py::test_split_single_request PASSED              [  9%]
+tests/test_http_parser.py::test_split_empty_file PASSED                  [ 14%]
+tests/test_http_parser.py::test_split_request_no_body PASSED             [ 19%]
+tests/test_http_parser.py::test_split_request_with_extra_newlines PASSED [ 23%]
+tests/test_http_parser.py::test_split_request_without_header PASSED      [ 28%]
+tests/test_http_parser.py::test_get_dependencies_no_placeholders PASSED  [ 33%]
+tests/test_http_parser.py::test_get_dependencies_single_dependency PASSED [ 38%]
+tests/test_http_parser.py::test_get_dependencies_multiple_dependencies PASSED [ 42%]
+tests/test_http_parser.py::test_get_dependencies_invalid_dependency PASSED [ 47%]
+tests/test_http_parser.py::test_get_dependencies_complex_names PASSED    [ 52%]
+tests/test_http_parser.py::test_get_dependencies_repeated_dependency PASSED [ 57%]
+tests/test_http_parser.py::test_get_dependencies_empty_request PASSED    [ 61%]
+tests/test_http_parser.py::test_get_name_with_hash_comment PASSED        [ 66%]
+tests/test_http_parser.py::test_get_name_with_double_slash_comment PASSED [ 71%]
+tests/test_http_parser.py::test_get_name_no_name PASSED                  [ 76%]
+tests/test_http_parser.py::test_get_name_multiple_names PASSED           [ 80%]
+tests/test_http_parser.py::test_get_name_with_extra_whitespace PASSED    [ 85%]
+tests/test_http_parser.py::test_get_name_without_request PASSED          [ 90%]
+tests/test_http_parser.py::test_get_name_inline_invalid PASSED           [ 95%]
+tests/test_http_parser.py::test_get_name_mixed_comment_styles PASSED     [100%]
 
-============================== 13 passed in 0.02s ==============================
+============================== 21 passed in 0.02s ==============================

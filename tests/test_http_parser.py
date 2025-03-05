@@ -217,9 +217,99 @@ def test_get_dependencies_empty_request():
     assert get_dependencies(raw_request, possible_names) is None
 
 
-# TESTS FOR get_name
+# TESTS FOR get_name --> REQ_003
 
 get_name = extract_inner_function(http_parser, "get_name")
+
+# Test: Valid request name with '#' comment
+def test_get_name_with_hash_comment():
+    """
+    Ensures that get_name correctly extracts a request name 
+    when defined with '#' as a comment.
+    """
+    raw_request = """# @name Request1
+GET /users"""
+    
+    expected_output = "Request1"
+    assert get_name(raw_request) == expected_output
+
+# Test: Valid request name with '//' comment
+def test_get_name_with_double_slash_comment():
+    """
+    Ensures that get_name correctly extracts a request name 
+    when defined with '//' as a comment.
+    """
+    raw_request = """// @name GetUser
+GET /users/{id}"""
+    
+    expected_output = "GetUser"
+    assert get_name(raw_request) == expected_output
+
+# Test: Request without a name
+def test_get_name_no_name():
+    """
+    Ensures that if no '@name' is present, get_name returns None.
+    """
+    raw_request = """GET /users"""
+    
+    assert get_name(raw_request) is None
+
+# Test: Multiple @name occurrences (invalid case)
+def test_get_name_multiple_names():
+    """
+    Ensures that if multiple '@name' occurrences exist, 
+    the function returns None to indicate an error.
+    """
+    raw_request = """# @name FirstName
+GET /users
+# @name SecondName
+POST /users"""
+    
+    assert get_name(raw_request) is None  # Multiple names should result in None
+
+# Test: Request with extra whitespace
+def test_get_name_with_extra_whitespace():
+    """
+    Ensures that extra spaces around @name do not affect the extracted name.
+    """
+    raw_request = """  #   @name   MyRequest   
+GET /data"""
+    
+    expected_output = "MyRequest"
+    assert get_name(raw_request) == expected_output
+
+# Test: Request with name but no actual request content
+def test_get_name_without_request():
+    """
+    Ensures that a request with only an @name definition still correctly extracts the name.
+    """
+    raw_request = """// @name LoneRequest"""
+    
+    expected_output = "LoneRequest"
+    assert get_name(raw_request) == expected_output
+
+# Test: Request with an inline @name (invalid case)
+def test_get_name_inline_invalid():
+    """
+    Ensures that @name only works when it starts a line, 
+    and does not extract names from inline comments.
+    """
+    raw_request = """GET /users # @name InlineName"""
+    
+    assert get_name(raw_request) is None  # Inline @name should not be detected
+
+# Test: Request with mixed comment styles
+def test_get_name_mixed_comment_styles():
+    """
+    Ensures that if multiple valid @name comments exist,
+    the function returns None to indicate an error.
+    """
+    raw_request = """# @name FirstRequest
+// @name SecondRequest
+GET /items"""
+    
+    assert get_name(raw_request) is None
+
 
 if __name__ == "__main__":
     pytest.main()
