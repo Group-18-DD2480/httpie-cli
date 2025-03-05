@@ -13,9 +13,7 @@ class HttpFileRequest:
     name: str | None
 
 
-def http_parser(filename: str) -> list[HttpFileRequest]:
-
-    def split_requests(http_file_contents: str) -> list[str]:
+def split_requests(http_file_contents: str) -> list[str]:
         """Splits an HTTP file into individual requests but keeps the '###' in each request."""
         parts = re.split(r"(^###.*)", http_file_contents, flags=re.MULTILINE)  
         requests = []
@@ -28,7 +26,7 @@ def http_parser(filename: str) -> list[HttpFileRequest]:
         return requests
 
 
-    def get_dependencies(raw_http_request: str, poss_names: list[str]) -> list[str] | None:
+def get_dependencies(raw_http_request: str, poss_names: list[str]) -> list[str] | None:
         """Returns a list of all unique request names that must be fulfilled before this request can be sent."""
         pattern = r"\{\{(.*?)\}\}"
         matches = re.findall(pattern, raw_http_request)
@@ -45,7 +43,7 @@ def http_parser(filename: str) -> list[HttpFileRequest]:
         return flat_names
 
 
-    def get_name(raw_http_request: str) -> str | None:
+def get_name(raw_http_request: str) -> str | None:
         """
         Returns the name of the HTTP request if it has one, None otherwise.
         The expected pattern is either a comment starting with '//' or '#' (optionally preceded by whitespace)
@@ -64,7 +62,7 @@ def http_parser(filename: str) -> list[HttpFileRequest]:
 
 
     
-    def replace_global(http_file_contents_raw:str) -> str:
+def replace_global(http_file_contents_raw:str) -> str:
         """finds and replaces all global variables by their values"""
         # possible error when @variable=value is in the body
         matches = re.findall(r"^@([A-Za-z0-9_]+)=(.+)$", http_file_contents_raw, re.MULTILINE)
@@ -73,7 +71,8 @@ def http_parser(filename: str) -> list[HttpFileRequest]:
             http_file_contents_cooking = re.sub(rf"{{{{({re.escape(variableName)})}}}}",value , http_file_contents_cooking)
         return http_file_contents_cooking
     
-    def extract_headers(raw_text: list[str]) -> dict :
+
+def extract_headers(raw_text: list[str]) -> dict :
         '''
         Extract the headers of the .http file
         
@@ -94,14 +93,16 @@ def http_parser(filename: str) -> list[HttpFileRequest]:
             headers[header_name.strip()] = header_value.strip()
                     
         return headers
+
     
-    def parse_body(raw_text: str) -> bytes :
+def parse_body(raw_text: str) -> bytes :
         '''
         parse the body of the .http file
         '''
         return b""
+
     
-    def parse_single_request(raw_text: str) -> HttpFileRequest:
+def parse_single_request(raw_text: str) -> HttpFileRequest:
         '''Parse a single request from .http file format to HttpFileRequest '''
         lines = raw_text.strip().splitlines()
         
@@ -130,6 +131,10 @@ def http_parser(filename: str) -> list[HttpFileRequest]:
             dependencies={},
             name=get_name(raw_text)
         )
+
+
+def http_parser(filename: str) -> list[HttpFileRequest]:
+
     
     http_file = Path(filename)
     if not http_file.exists():
