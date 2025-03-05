@@ -111,7 +111,7 @@ def test_split_request_without_header():
 
 def test_get_dependencies_no_placeholders():
     """
-    This test verifies that if a request does not contain any {{placeholders}}, 
+    This test verifies that if a request does not contain any {{placeholders}},
     the function correctly returns None.
     """
     raw_request = """GET /users"""
@@ -121,7 +121,7 @@ def test_get_dependencies_no_placeholders():
 
 def test_get_dependencies_single_dependency():
     """
-    This test checks that a single valid dependency is correctly extracted 
+    This test checks that a single valid dependency is correctly extracted
     from a request and returned in a list.
     """
     raw_request = """GET /users/{{Request1.id}}"""
@@ -132,7 +132,7 @@ def test_get_dependencies_single_dependency():
 
 def test_get_dependencies_multiple_dependencies():
     """
-    This test verifies that multiple dependencies are correctly identified 
+    This test verifies that multiple dependencies are correctly identified
     and returned in a list, regardless of order.
     """
     raw_request = """POST /orders/{{Request1.order_id}}/{{Request2.user_id}}"""
@@ -143,7 +143,7 @@ def test_get_dependencies_multiple_dependencies():
 
 def test_get_dependencies_invalid_dependency():
     """
-    This test ensures that if the request references a dependency that is 
+    This test ensures that if the request references a dependency that is
     not in the provided possible_names list, the function correctly returns None.
     """
     raw_request = """DELETE /items/{{InvalidRequest.item_id}}"""
@@ -153,7 +153,7 @@ def test_get_dependencies_invalid_dependency():
 
 def test_get_dependencies_complex_names():
     """
-    This test checks that dependencies with numbers and underscores 
+    This test checks that dependencies with numbers and underscores
     are correctly extracted and returned, regardless of order.
     """
     raw_request = """PATCH /update/{{Request_1.field}}/{{Request2_2024.item}}"""
@@ -164,7 +164,7 @@ def test_get_dependencies_complex_names():
 
 def test_get_dependencies_repeated_dependency():
     """
-    This test ensures that if the same dependency appears multiple times 
+    This test ensures that if the same dependency appears multiple times
     in the request, it is still only listed once in the output.
     """
     raw_request = """PUT /update/{{Request1.id}}/{{Request1.name}}"""
@@ -175,7 +175,7 @@ def test_get_dependencies_repeated_dependency():
 
 def test_get_dependencies_empty_request():
     """
-    This test checks that an empty request string returns None 
+    This test checks that an empty request string returns None
     since there are no placeholders.
     """
     raw_request = ""
@@ -187,7 +187,7 @@ def test_get_dependencies_empty_request():
 
 def test_get_name_with_hash_comment():
     """
-    Ensures that get_name correctly extracts a request name 
+    Ensures that get_name correctly extracts a request name
     when defined with '#' as a comment.
     """
     raw_request = """# @name Request1
@@ -198,7 +198,7 @@ GET /users"""
 
 def test_get_name_with_double_slash_comment():
     """
-    Ensures that get_name correctly extracts a request name 
+    Ensures that get_name correctly extracts a request name
     when defined with '//' as a comment.
     """
     raw_request = """// @name GetUser
@@ -217,7 +217,7 @@ def test_get_name_no_name():
 
 def test_get_name_multiple_names():
     """
-    Ensures that if multiple '@name' occurrences exist, 
+    Ensures that if multiple '@name' occurrences exist,
     the function returns None to indicate an error.
     """
     raw_request = """# @name FirstName
@@ -231,7 +231,7 @@ def test_get_name_with_extra_whitespace():
     """
     Ensures that extra spaces around @name do not affect the extracted name.
     """
-    raw_request = """  #   @name   MyRequest   
+    raw_request = """  #   @name   MyRequest
 GET /data"""
     expected_output = "MyRequest"
     assert get_name(raw_request) == expected_output
@@ -248,7 +248,7 @@ def test_get_name_without_request():
 
 def test_get_name_inline_invalid():
     """
-    Ensures that @name only works when it starts a line, 
+    Ensures that @name only works when it starts a line,
     and does not extract names from inline comments.
     """
     raw_request = """GET /users # @name InlineName"""
