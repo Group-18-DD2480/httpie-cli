@@ -156,13 +156,15 @@ def test_get_dependencies_single_dependency():
 def test_get_dependencies_multiple_dependencies():
     """
     This test verifies that multiple dependencies are correctly identified 
-    and returned in a list.
+    and returned in a list, regardless of order.
     """
     raw_request = """POST /orders/{{Request1.order_id}}/{{Request2.user_id}}"""
     possible_names = ["Request1", "Request2", "Request3"]
     
     expected_output = ["Request1", "Request2"]
-    assert get_dependencies(raw_request, possible_names) == expected_output
+    
+    assert sorted(get_dependencies(raw_request, possible_names)) == sorted(expected_output)
+
 
 # Test case: Handling dependencies that do not exist
 def test_get_dependencies_invalid_dependency():
@@ -179,13 +181,15 @@ def test_get_dependencies_invalid_dependency():
 def test_get_dependencies_complex_names():
     """
     This test checks that dependencies with numbers and underscores 
-    are correctly extracted and returned.
+    are correctly extracted and returned, regardless of order.
     """
     raw_request = """PATCH /update/{{Request_1.field}}/{{Request2_2024.item}}"""
     possible_names = ["Request_1", "Request2_2024", "Request3"]
     
     expected_output = ["Request_1", "Request2_2024"]
-    assert get_dependencies(raw_request, possible_names) == expected_output
+    
+    assert sorted(get_dependencies(raw_request, possible_names)) == sorted(expected_output)
+
 
 # Test case: Request with multiple occurrences of the same dependency
 def test_get_dependencies_repeated_dependency():

@@ -1,0 +1,23 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-7.4.4, pluggy-1.4.0 -- /usr/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/josephus/Desktop/httpie-cli
+configfile: pytest.ini
+plugins: httpbin-2.0.0, anyio-4.2.0
+collecting ... collected 13 items
+
+tests/test_http_parser.py::test_split_multiple_requests PASSED           [  7%]
+tests/test_http_parser.py::test_split_single_request PASSED              [ 15%]
+tests/test_http_parser.py::test_split_empty_file PASSED                  [ 23%]
+tests/test_http_parser.py::test_split_request_no_body PASSED             [ 30%]
+tests/test_http_parser.py::test_split_request_with_extra_newlines PASSED [ 38%]
+tests/test_http_parser.py::test_split_request_without_header PASSED      [ 46%]
+tests/test_http_parser.py::test_get_dependencies_no_placeholders PASSED  [ 53%]
+tests/test_http_parser.py::test_get_dependencies_single_dependency PASSED [ 61%]
+tests/test_http_parser.py::test_get_dependencies_multiple_dependencies PASSED [ 69%]
+tests/test_http_parser.py::test_get_dependencies_invalid_dependency PASSED [ 76%]
+tests/test_http_parser.py::test_get_dependencies_complex_names PASSED    [ 84%]
+tests/test_http_parser.py::test_get_dependencies_repeated_dependency PASSED [ 92%]
+tests/test_http_parser.py::test_get_dependencies_empty_request PASSED    [100%]
+
+============================== 13 passed in 0.02s ==============================
