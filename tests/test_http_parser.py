@@ -379,5 +379,83 @@ GET /info"""
     expected_output = raw_contents  # No replacement should occur
     assert replace_global(raw_contents) == expected_output
 
+
+## TESTS FOR extract_headers --> REQ_003
+
+extract_headers = extract_inner_function(http_parser, "extract_headers")
+
+
+# Test 1: Empty list should return an empty dictionary.
+def test_extract_headers_empty():
+    raw_text = []
+    expected = {}
+    assert extract_headers(raw_text) == expected
+
+
+# Test 2: Lines that are empty or only whitespace should be ignored.
+def test_extract_headers_only_empty_lines():
+    raw_text = ["", "   ", "\t"]
+    expected = {}
+    assert extract_headers(raw_text) == expected
+
+
+# Test 3: A single valid header line.
+def test_extract_headers_single_header():
+    raw_text = ["Content-Type: application/json"]
+    expected = {"Content-Type": "application/json"}
+    assert extract_headers(raw_text) == expected
+
+
+# Test 4: Multiple header lines should be parsed into a dictionary.
+def test_extract_headers_multiple_headers():
+    raw_text = [
+        "Content-Type: application/json",
+        "Authorization: Bearer token123"
+    ]
+    expected = {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer token123"
+    }
+    assert extract_headers(raw_text) == expected
+
+
+# Test 5: Lines without a colon should be ignored.
+def test_extract_headers_line_without_colon():
+    raw_text = [
+        "This is not a header",
+        "Content-Length: 123"
+    ]
+    expected = {"Content-Length": "123"}
+    assert extract_headers(raw_text) == expected
+
+
+# Test 6: Extra whitespace around header names and values should be trimmed.
+def test_extract_headers_extra_spaces():
+    raw_text = [
+        "  Accept : text/html  "
+    ]
+    expected = {"Accept": "text/html"}
+    assert extract_headers(raw_text) == expected
+
+
+# Test 7: Only the first colon should be used to split the header name and value.
+def test_extract_headers_multiple_colons():
+    raw_text = [
+        "Custom-Header: value:with:colons"
+    ]
+    expected = {"Custom-Header": "value:with:colons"}
+    assert extract_headers(raw_text) == expected
+
+
+# Test 8: If a header appears more than once, the last occurrence should overwrite previous ones.
+def test_extract_headers_duplicate_headers():
+    raw_text = [
+        "X-Header: one",
+        "X-Header: two"
+    ]
+    expected = {"X-Header": "two"}
+    assert extract_headers(raw_text) == expected
+
+
 if __name__ == "__main__":
     pytest.main()
