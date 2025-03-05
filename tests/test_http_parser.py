@@ -4,7 +4,7 @@ import inspect
 
 from httpie.http_parser import http_parser  # Import the main function containing split_requests
 
-def extract_inner_function(outer, inner):
+def extract_inner_function(outer, inner): # used to extract nested function definitions
     """Extracts `inner` function from `outer` function."""
     source_code = inspect.getsource(outer)  # Get the source of http_parser
     function_definitions = source_code.split("def ")  # Split by function definitions
@@ -27,7 +27,7 @@ def normalize_whitespace(text):
     return "\n".join(normalized_lines)
 
 
-# TESTS FOR split_requests -->> REQ_002
+## TESTS FOR split_requests -->> REQ_002
 
 split_requests = extract_inner_function(http_parser, "split_requests")
 
@@ -125,7 +125,7 @@ def test_split_request_without_header():
 
     assert split_requests(http_file) == expected_output
 
-# TESTS FOR get_dependencies  -->> REQ_007
+## TESTS FOR get_dependencies  -->> REQ_007
 
 get_dependencies = extract_inner_function(http_parser, "get_dependencies")
 
@@ -217,7 +217,7 @@ def test_get_dependencies_empty_request():
     assert get_dependencies(raw_request, possible_names) is None
 
 
-# TESTS FOR get_name --> REQ_003
+## TESTS FOR get_name --> REQ_003
 
 get_name = extract_inner_function(http_parser, "get_name")
 
@@ -310,6 +310,74 @@ GET /items"""
     
     assert get_name(raw_request) is None
 
+
+## TESTS FOR replace_global --> REQ_005
+
+replace_global = extract_inner_function(http_parser, "replace_global")
+
+def test_replace_global_no_definitions():
+    """
+    Ensures that if no global variable definitions are present,
+    the file contents remain unchanged.
+    """
+    raw_contents = "GET /users/{{id}}"
+    expected_output = raw_contents  # No replacement should occur
+    assert replace_global(raw_contents) == expected_output
+
+def test_replace_global_single_variable():
+    """
+    Ensures that a single global variable definition is correctly used to replace
+    all its corresponding placeholders in the file.
+    """
+    raw_contents = """@host=example.com
+GET http://{{host}}/users"""
+    expected_output = """@host=example.com
+GET http://example.com/users"""
+    assert replace_global(raw_contents) == expected_output
+
+def test_replace_global_multiple_variables():
+    """
+    Ensures that multiple global variable definitions are correctly used to replace
+    their corresponding placeholders in the file.
+    """
+    raw_contents = """@host=example.com
+@port=8080
+GET http://{{host}}:{{port}}/users"""
+    expected_output = """@host=example.com
+@port=8080
+GET http://example.com:8080/users"""
+    assert replace_global(raw_contents) == expected_output
+
+def test_replace_global_multiple_occurrences():
+    """
+    Ensures that if a variable appears multiple times in the file,
+    all occurrences are replaced.
+    """
+    raw_contents = """@name=Test
+GET /api?param={{name}}&other={{name}}"""
+    expected_output = """@name=Test
+GET /api?param=Test&other=Test"""
+    assert replace_global(raw_contents) == expected_output
+
+def test_replace_global_value_with_spaces():
+    """
+    Ensures that global variable definitions with spaces in their values are handled correctly.
+    """
+    raw_contents = """@greeting=Hello World
+GET /message?text={{greeting}}"""
+    expected_output = """@greeting=Hello World
+GET /message?text=Hello World"""
+    assert replace_global(raw_contents) == expected_output
+
+def test_replace_global_definition_without_placeholder():
+    """
+    Ensures that if a global variable is defined but its placeholder is not present,
+    the file remains unchanged.
+    """
+    raw_contents = """@unused=Value
+GET /info"""
+    expected_output = raw_contents  # No replacement should occur
+    assert replace_global(raw_contents) == expected_output
 
 if __name__ == "__main__":
     pytest.main()
