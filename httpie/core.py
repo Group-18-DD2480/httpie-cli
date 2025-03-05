@@ -1,6 +1,8 @@
 import argparse
 import os
 import platform
+import random
+import string
 import sys
 import socket
 from typing import List, Optional, Union, Callable
@@ -15,7 +17,7 @@ from .cli.nested_json import NestedJSONSyntaxError
 from .client import collect_messages
 from .context import Environment, LogLevel
 from .downloads import Downloader
-from .http_parser import http_parser
+from .http_parser import *
 from .models import (
     RequestsMessageKind,
     OutputOptions
@@ -27,7 +29,7 @@ from .status import ExitStatus, http_status_to_exit_status
 from .utils import unwrap_context
 from .internal.update_warnings import check_updates
 from .internal.daemon_runner import is_daemon_mode, run_daemon_task
-
+from pathlib import Path
 
 # noinspection PyDefaultArgument
 def raw_main(
@@ -272,17 +274,40 @@ def program(args: argparse.Namespace, env: Environment) -> ExitStatus:
                 args.output_file.close()
     
     if args.http_file:
-        # TODO: FILE PARSING TO REQUESTS ARRAY
-        requests_list = http_parser(args.url)
-        returns = []
-        for req in requests_list:
-            args.url = req.url
-            args.method = req.method
-            # args.headers = req.headers
-            # args.body = req.body
-            returns.append(actual_program(args, env))
-    
-        return ExitStatus.SUCCESS if all(r is ExitStatus.SUCCESS for r in returns) else ExitStatus.ERROR
+        
+        http_file = Path(args.url)
+        if not http_file.exists():
+            raise FileNotFoundError(f"File not found: {args.url}")
+        if not http_file.is_file():
+            raise IsADirectoryError(f"Path is not a file: {args.url}")
+        http_contents = http_file.read_text()
+        
+        raw_requests = split_requests(replace_global(http_contents))
+        raw_requests = [req.strip() for req in raw_requests if req.strip()]
+        parsed_requests = []
+        req_names = []
+        responses = {}
+
+        for raw_req in raw_requests:
+            new_req = parse_single_request(raw_req)
+            new_req.dependencies = get_dependencies(raw_req, req_names)
+            if new_req.name is not None:
+                req_names.append(new_req.name)
+            else:
+                letters = string.ascii_letters + string.digits
+                new_req.name = ''.join(random.choice(letters) for _ in range(16))
+            parsed_requests.append(new_req)
+            args.url = new_req.url
+            args.method = new_req.method
+            args.headers = new_req.headers
+            args.body = new_req.body
+
+            response = actual_program(args, env)
+            if new_req.name is not None:
+                responses[new_req.name] = response
+
+        all_success = all(r is ExitStatus.SUCCESS for r in responses.values())
+        return ExitStatus.SUCCESS if all_success else ExitStatus.ERROR
     
     return actual_program(args, env)
 
