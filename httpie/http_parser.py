@@ -15,12 +15,14 @@ class HttpFileRequest:
 def split_requests(http_file_contents: str) -> list[str]:
     """Splits an HTTP file into individual requests but keeps the '###' in each request."""
     parts = re.split(r"(^###.*)", http_file_contents, flags=re.MULTILINE)  
+    
     requests = []
-
-    for i in range(1, len(parts), 2):  
-        header = parts[i].strip()  
-        body = parts[i + 1].strip() if i + 1 < len(parts) else ""
-        requests.append(f"{header}\n{body}")
+    for part in parts:
+        if part.startswith("###"):
+            continue
+        part = part.strip()
+        if part:
+            requests.append(part)
 
     return requests
 
