@@ -2,8 +2,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 import re
 
-
-
 @dataclass
 class HttpFileRequest:
     method: str
@@ -134,27 +132,3 @@ def parse_single_request(raw_text: str) -> HttpFileRequest:
         dependencies={},
         name=get_name(raw_text)
     )
-
-
-def http_parser(filename: str) -> list[HttpFileRequest]:
-    http_file = Path(filename)
-    if not http_file.exists():
-        raise FileNotFoundError(f"File not found: {filename}")
-    if not http_file.is_file():
-        raise IsADirectoryError(f"Path is not a file: {filename}")
-    http_contents = http_file.read_text()
-
-    raw_requests = split_requests(replace_global(http_contents))
-    raw_requests = [req.strip() for req in raw_requests if req.strip()]
-    parsed_requests = []
-    req_names = []
-
-    for raw_req in raw_requests:
-        new_req = parse_single_request(raw_req)
-        new_req.dependencies = get_dependencies(raw_req, req_names)
-        if new_req.name is not None:
-            req_names.append(new_req.name)
-
-        parsed_requests.append(new_req)
-
-    return parsed_requests
