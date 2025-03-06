@@ -86,12 +86,13 @@ def parse_body(raw_text: str) -> bytes :
     '''
     return b""
 
-def parse_single_request(raw_text: str) -> HttpFileRequest:
+def parse_single_request(raw_text: str) -> HttpFileRequest | None:
     '''Parse a single request from .http file format to HttpFileRequest '''
     lines = raw_text.strip().splitlines()
     
     lines = [line.strip() for line in lines if not line.strip().startswith("#")]
-    
+    if not lines:
+        return None
     method, url = lines[0].split(" ")
     
     raw_headers = []

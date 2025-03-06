@@ -290,6 +290,8 @@ def program(args: argparse.Namespace, env: Environment) -> ExitStatus:
 
         for raw_req in raw_requests:
             new_req = parse_single_request(raw_req)
+            if new_req is None:
+                continue
             new_req.dependencies = get_dependencies(raw_req, req_names)
             if new_req.name is not None:
                 req_names.append(new_req.name)
