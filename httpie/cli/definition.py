@@ -251,7 +251,7 @@ content_types.add_argument(
     default=False,
     short_help="Parse and send an HTTP request from a .http file",
     help="""
-    Parse and send an HTTP request from a file in .http format. 
+    Parse and send an HTTP request from a file in .http format.
     The file should contain a valid HTTP request with headers and body.
     If this is specified, URL will be treated as a file path.
     """,
