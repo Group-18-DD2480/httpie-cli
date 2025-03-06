@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from pathlib import Path
 import re
+
 
 
 @dataclass
@@ -24,6 +24,7 @@ def split_requests(http_file_contents: str) -> list[str]:
         body = parts[i + 1].strip() if i + 1 < len(parts) else ""
         requests.append(f"{header}\n{body}")
 
+    return requests
     return requests
 
 

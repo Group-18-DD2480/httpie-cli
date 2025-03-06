@@ -5,20 +5,39 @@ import textwrap
 from argparse import FileType
 
 from httpie import __doc__, __version__
-from httpie.cli.argtypes import (KeyValueArgType, SessionNameValidator,
-                                 SSLCredentials, readable_file_arg,
-                                 response_charset_type, response_mime_type)
-from httpie.cli.constants import (BASE_OUTPUT_OPTIONS, DEFAULT_FORMAT_OPTIONS,
-                                  OUT_REQ_BODY, OUT_REQ_HEAD, OUT_RESP_BODY,
-                                  OUT_RESP_HEAD, OUT_RESP_META, OUTPUT_OPTIONS,
-                                  OUTPUT_OPTIONS_DEFAULT, PRETTY_MAP,
-                                  PRETTY_STDOUT_TTY_ONLY,
-                                  SEPARATOR_GROUP_ALL_ITEMS, SEPARATOR_PROXY,
-                                  SORTED_FORMAT_OPTIONS_STRING,
-                                  UNSORTED_FORMAT_OPTIONS_STRING, RequestType)
+from httpie.cli.argtypes import (
+    KeyValueArgType,
+    SessionNameValidator,
+    SSLCredentials,
+    readable_file_arg,
+    response_charset_type,
+    response_mime_type,
+)
+from httpie.cli.constants import (
+    BASE_OUTPUT_OPTIONS,
+    DEFAULT_FORMAT_OPTIONS,
+    OUT_REQ_BODY,
+    OUT_REQ_HEAD,
+    OUT_RESP_BODY,
+    OUT_RESP_HEAD,
+    OUT_RESP_META,
+    OUTPUT_OPTIONS,
+    OUTPUT_OPTIONS_DEFAULT,
+    PRETTY_MAP,
+    PRETTY_STDOUT_TTY_ONLY,
+    SEPARATOR_GROUP_ALL_ITEMS,
+    SEPARATOR_PROXY,
+    SORTED_FORMAT_OPTIONS_STRING,
+    UNSORTED_FORMAT_OPTIONS_STRING,
+    RequestType,
+)
 from httpie.cli.options import ParserSpec, Qualifiers, to_argparse
-from httpie.output.formatters.colors import (AUTO_STYLE, DEFAULT_STYLE, BUNDLED_STYLES,
-                                             get_available_styles)
+from httpie.output.formatters.colors import (
+    AUTO_STYLE,
+    DEFAULT_STYLE,
+    BUNDLED_STYLES,
+    get_available_styles,
+)
 from httpie.plugins.builtin import BuiltinAuthPlugin
 from httpie.plugins.registry import plugin_manager
 from httpie.ssl_ import AVAILABLE_SSL_VERSION_ARG_MAPPING, DEFAULT_SSL_CIPHERS_STRING
@@ -26,12 +45,12 @@ from httpie.ssl_ import AVAILABLE_SSL_VERSION_ARG_MAPPING, DEFAULT_SSL_CIPHERS_S
 
 # Man pages are static (built when making a release).
 # We use this check to not include generated, system-specific information there (e.g., default --ciphers).
-IS_MAN_PAGE = bool(os.environ.get('HTTPIE_BUILDING_MAN_PAGES'))
+IS_MAN_PAGE = bool(os.environ.get("HTTPIE_BUILDING_MAN_PAGES"))
 
 
 options = ParserSpec(
-    'http',
-    description=f'{__doc__.strip()} <https://httpie.io>',
+    "http",
+    description=f"{__doc__.strip()} <https://httpie.io>",
     epilog="""
     For every --OPTION there is also a --no-OPTION that reverts OPTION
     to its default value.
@@ -39,7 +58,7 @@ options = ParserSpec(
     Suggestions and bug reports are greatly appreciated:
         https://github.com/httpie/cli/issues
     """,
-    source_file=__file__
+    source_file=__file__,
 )
 
 #######################################################################
@@ -47,7 +66,7 @@ options = ParserSpec(
 #######################################################################
 
 positional_arguments = options.add_group(
-    'Positional arguments',
+    "Positional arguments",
     description="""
     These arguments come after any flags and in the order they are listed here.
     Only URL is required.
@@ -55,11 +74,11 @@ positional_arguments = options.add_group(
 )
 
 positional_arguments.add_argument(
-    dest='method',
-    metavar='METHOD',
+    dest="method",
+    metavar="METHOD",
     nargs=Qualifiers.OPTIONAL,
     default=None,
-    short_help='The HTTP method to be used for the request (GET, POST, PUT, DELETE, ...).',
+    short_help="The HTTP method to be used for the request (GET, POST, PUT, DELETE, ...).",
     help="""
     The HTTP method to be used for the request (GET, POST, PUT, DELETE, ...).
 
@@ -72,9 +91,9 @@ positional_arguments.add_argument(
     """,
 )
 positional_arguments.add_argument(
-    dest='url',
-    metavar='URL',
-    short_help='The request URL.',
+    dest="url",
+    metavar="URL",
+    short_help="The request URL.",
     help="""
     The request URL. Scheme defaults to 'http://' if the URL
     does not include one. (You can override this with: --default-scheme=http/https)
@@ -87,21 +106,29 @@ positional_arguments.add_argument(
     """,
 )
 positional_arguments.add_argument(
-    dest='request_items',
-    metavar='REQUEST_ITEM',
+    dest="request_items",
+    metavar="REQUEST_ITEM",
     nargs=Qualifiers.ZERO_OR_MORE,
     default=None,
     type=KeyValueArgType(*SEPARATOR_GROUP_ALL_ITEMS),
     short_help=(
-        'HTTPie’s request items syntax for specifying HTTP headers, JSON/Form'
-        'data, files, and URL parameters.'
+        "HTTPie’s request items syntax for specifying HTTP headers, JSON/Form"
+        "data, files, and URL parameters."
     ),
     nested_options=[
-        ('HTTP Headers', 'Name:Value', 'Arbitrary HTTP header, e.g X-API-Token:123'),
-        ('URL Parameters', 'name==value', 'Querystring parameter to the URL, e.g limit==50'),
-        ('Data Fields', 'field=value', 'Data fields to be serialized as JSON (default) or Form Data (with --form)'),
-        ('Raw JSON Fields', 'field:=json', 'Data field for real JSON types.'),
-        ('File upload Fields', 'field@/dir/file', 'Path field for uploading a file.'),
+        ("HTTP Headers", "Name:Value", "Arbitrary HTTP header, e.g X-API-Token:123"),
+        (
+            "URL Parameters",
+            "name==value",
+            "Querystring parameter to the URL, e.g limit==50",
+        ),
+        (
+            "Data Fields",
+            "field=value",
+            "Data fields to be serialized as JSON (default) or Form Data (with --form)",
+        ),
+        ("Raw JSON Fields", "field:=json", "Data field for real JSON types."),
+        ("File upload Fields", "field@/dir/file", "Path field for uploading a file."),
     ],
     help=r"""
     Optional key-value pairs to be included in the request. The separator used
@@ -148,15 +175,15 @@ positional_arguments.add_argument(
 # Content type.
 #######################################################################
 
-content_types = options.add_group('Predefined content types')
+content_types = options.add_group("Predefined content types")
 
 content_types.add_argument(
-    '--json',
-    '-j',
-    action='store_const',
+    "--json",
+    "-j",
+    action="store_const",
     const=RequestType.JSON,
-    dest='request_type',
-    short_help='(default) Serialize data items from the command line as a JSON object.',
+    dest="request_type",
+    short_help="(default) Serialize data items from the command line as a JSON object.",
     help="""
     (default) Data items from the command line are serialized as a JSON object.
     The Content-Type and Accept headers are set to application/json
@@ -165,12 +192,12 @@ content_types.add_argument(
     """,
 )
 content_types.add_argument(
-    '--form',
-    '-f',
-    action='store_const',
+    "--form",
+    "-f",
+    action="store_const",
     const=RequestType.FORM,
-    dest='request_type',
-    short_help='Serialize data items from the command line as form field data.',
+    dest="request_type",
+    short_help="Serialize data items from the command line as form field data.",
     help="""
     Data items from the command line are serialized as form fields.
 
@@ -181,25 +208,25 @@ content_types.add_argument(
     """,
 )
 content_types.add_argument(
-    '--multipart',
-    action='store_const',
+    "--multipart",
+    action="store_const",
     const=RequestType.MULTIPART,
-    dest='request_type',
+    dest="request_type",
     short_help=(
-        'Similar to --form, but always sends a multipart/form-data '
-        'request (i.e., even without files).'
-    )
+        "Similar to --form, but always sends a multipart/form-data "
+        "request (i.e., even without files)."
+    ),
 )
 content_types.add_argument(
-    '--boundary',
+    "--boundary",
     short_help=(
-        'Specify a custom boundary string for multipart/form-data requests. '
-        'Only has effect only together with --form.'
-    )
+        "Specify a custom boundary string for multipart/form-data requests. "
+        "Only has effect only together with --form."
+    ),
 )
 content_types.add_argument(
-    '--raw',
-    short_help='Pass raw request data without extra processing.',
+    "--raw",
+    short_help="Pass raw request data without extra processing.",
     help="""
     This option allows you to pass raw request data without extra processing
     (as opposed to the structured request items syntax):
@@ -234,14 +261,14 @@ content_types.add_argument(
 # Content processing.
 #######################################################################
 
-processing_options = options.add_group('Content processing options')
+processing_options = options.add_group("Content processing options")
 
 processing_options.add_argument(
-    '--compress',
-    '-x',
-    action='count',
+    "--compress",
+    "-x",
+    action="count",
     default=0,
-    short_help='Compress the content with Deflate algorithm.',
+    short_help="Compress the content with Deflate algorithm.",
     help="""
     Content compressed (encoded) with Deflate algorithm.
     The Content-Encoding header is set to deflate.
@@ -265,9 +292,9 @@ def format_style_help(available_styles, *, isolation_mode: bool = False):
         {available_styles}
     """
     if isolation_mode:
-        text += '\n\n'
-        text += 'For finding out all available styles in your system, try:\n\n'
-        text += '    $ http --style\n'
+        text += "\n\n"
+        text += "For finding out all available styles in your system, try:\n\n"
+        text += "    $ http --style\n"
     text += textwrap.dedent("""
         The "{auto_style}" style follows your terminal's ANSI color styles.
         For non-{auto_style} styles to work properly, please make sure that the
@@ -278,9 +305,8 @@ def format_style_help(available_styles, *, isolation_mode: bool = False):
     if isolation_mode:
         available_styles = sorted(BUNDLED_STYLES)
 
-    available_styles_text = '\n'.join(
-        f'    {line.strip()}'
-        for line in textwrap.wrap(', '.join(available_styles), 60)
+    available_styles_text = "\n".join(
+        f"    {line.strip()}" for line in textwrap.wrap(", ".join(available_styles), 60)
     ).strip()
     return text.format(
         default=DEFAULT_STYLE,
@@ -290,24 +316,24 @@ def format_style_help(available_styles, *, isolation_mode: bool = False):
 
 
 _sorted_kwargs = {
-    'action': 'append_const',
-    'const': SORTED_FORMAT_OPTIONS_STRING,
-    'dest': 'format_options',
+    "action": "append_const",
+    "const": SORTED_FORMAT_OPTIONS_STRING,
+    "dest": "format_options",
 }
 _unsorted_kwargs = {
-    'action': 'append_const',
-    'const': UNSORTED_FORMAT_OPTIONS_STRING,
-    'dest': 'format_options',
+    "action": "append_const",
+    "const": UNSORTED_FORMAT_OPTIONS_STRING,
+    "dest": "format_options",
 }
 
-output_processing = options.add_group('Output processing')
+output_processing = options.add_group("Output processing")
 
 output_processing.add_argument(
-    '--pretty',
-    dest='prettify',
+    "--pretty",
+    dest="prettify",
     default=PRETTY_STDOUT_TTY_ONLY,
     choices=sorted(PRETTY_MAP.keys()),
-    short_help='Control the processing of console outputs.',
+    short_help="Control the processing of console outputs.",
     help="""
     Controls output processing. The value can be "none" to not prettify
     the output (default for redirected output), "all" to apply both colors
@@ -316,12 +342,12 @@ output_processing.add_argument(
     """,
 )
 output_processing.add_argument(
-    '--style',
-    '-s',
-    dest='style',
-    metavar='STYLE',
+    "--style",
+    "-s",
+    dest="style",
+    metavar="STYLE",
     default=DEFAULT_STYLE,
-    action='lazy_choices',
+    action="lazy_choices",
     getter=get_available_styles,
     short_help=f'Output coloring style (default is "{DEFAULT_STYLE}").',
     help_formatter=format_style_help,
@@ -330,16 +356,16 @@ output_processing.add_argument(
 # The closest approx. of the documented resetting to default via --no-<option>.
 # We hide them from the doc because they act only as low-level aliases here.
 output_processing.add_argument(
-    '--no-unsorted', **_sorted_kwargs, help=Qualifiers.SUPPRESS
+    "--no-unsorted", **_sorted_kwargs, help=Qualifiers.SUPPRESS
 )
 output_processing.add_argument(
-    '--no-sorted', **_unsorted_kwargs, help=Qualifiers.SUPPRESS
+    "--no-sorted", **_unsorted_kwargs, help=Qualifiers.SUPPRESS
 )
 
 output_processing.add_argument(
-    '--unsorted',
+    "--unsorted",
     **_unsorted_kwargs,
-    short_help='Disables all sorting while formatting output.',
+    short_help="Disables all sorting while formatting output.",
     help=f"""
     Disables all sorting while formatting output. It is a shortcut for:
 
@@ -348,9 +374,9 @@ output_processing.add_argument(
     """,
 )
 output_processing.add_argument(
-    '--sorted',
+    "--sorted",
     **_sorted_kwargs,
-    short_help='Re-enables all sorting options while formatting output.',
+    short_help="Re-enables all sorting options while formatting output.",
     help=f"""
     Re-enables all sorting options while formatting output. It is a shortcut for:
 
@@ -359,10 +385,10 @@ output_processing.add_argument(
     """,
 )
 output_processing.add_argument(
-    '--response-charset',
-    metavar='ENCODING',
+    "--response-charset",
+    metavar="ENCODING",
     type=response_charset_type,
-    short_help='Override the response encoding for terminal display purposes.',
+    short_help="Override the response encoding for terminal display purposes.",
     help="""
     Override the response encoding for terminal display purposes, e.g.:
 
@@ -372,10 +398,10 @@ output_processing.add_argument(
     """,
 )
 output_processing.add_argument(
-    '--response-mime',
-    metavar='MIME_TYPE',
+    "--response-mime",
+    metavar="MIME_TYPE",
     type=response_mime_type,
-    short_help='Override the response mime type for coloring and formatting for the terminal.',
+    short_help="Override the response mime type for coloring and formatting for the terminal.",
     help="""
     Override the response mime type for coloring and formatting for the terminal, e.g.:
 
@@ -385,9 +411,9 @@ output_processing.add_argument(
     """,
 )
 output_processing.add_argument(
-    '--format-options',
-    action='append',
-    short_help='Controls output formatting.',
+    "--format-options",
+    action="append",
+    short_help="Controls output formatting.",
     help="""
     Controls output formatting. Only relevant when formatting is enabled
     through (explicit or implied) --pretty=all or --pretty=format.
@@ -404,8 +430,8 @@ output_processing.add_argument(
     This is something you will typically put into your config file.
 
     """.format(
-        option_list='\n'.join(
-            f'        {option}' for option in DEFAULT_FORMAT_OPTIONS
+        option_list="\n".join(
+            f"        {option}" for option in DEFAULT_FORMAT_OPTIONS
         ).strip()
     ),
 )
@@ -414,14 +440,14 @@ output_processing.add_argument(
 # Output options
 #######################################################################
 
-output_options = options.add_group('Output options')
+output_options = options.add_group("Output options")
 
 output_options.add_argument(
-    '--print',
-    '-p',
-    dest='output_options',
-    metavar='WHAT',
-    short_help='Options to specify what the console output should contain.',
+    "--print",
+    "-p",
+    dest="output_options",
+    metavar="WHAT",
+    short_help="Options to specify what the console output should contain.",
     help=f"""
     String specifying what the output should contain:
 
@@ -439,36 +465,36 @@ output_options.add_argument(
     """,
 )
 output_options.add_argument(
-    '--headers',
-    '-h',
-    dest='output_options',
-    action='store_const',
+    "--headers",
+    "-h",
+    dest="output_options",
+    action="store_const",
     const=OUT_RESP_HEAD,
-    short_help='Print only the response headers.',
+    short_help="Print only the response headers.",
     help=f"""
     Print only the response headers. Shortcut for --print={OUT_RESP_HEAD}.
 
     """,
 )
 output_options.add_argument(
-    '--meta',
-    '-m',
-    dest='output_options',
-    action='store_const',
+    "--meta",
+    "-m",
+    dest="output_options",
+    action="store_const",
     const=OUT_RESP_META,
-    short_help='Print only the response metadata.',
+    short_help="Print only the response metadata.",
     help=f"""
     Print only the response metadata. Shortcut for --print={OUT_RESP_META}.
 
     """,
 )
 output_options.add_argument(
-    '--body',
-    '-b',
-    dest='output_options',
-    action='store_const',
+    "--body",
+    "-b",
+    dest="output_options",
+    action="store_const",
     const=OUT_RESP_BODY,
-    short_help='Print only the response body.',
+    short_help="Print only the response body.",
     help=f"""
     Print only the response body. Shortcut for --print={OUT_RESP_BODY}.
 
@@ -476,27 +502,27 @@ output_options.add_argument(
 )
 
 output_options.add_argument(
-    '--verbose',
-    '-v',
-    dest='verbose',
-    action='count',
+    "--verbose",
+    "-v",
+    dest="verbose",
+    action="count",
     default=0,
-    short_help='Make output more verbose.',
+    short_help="Make output more verbose.",
     help=f"""
     Verbose output. For the level one (with single `-v`/`--verbose`), print
     the whole request as well as the response. Also print any intermediary
     requests/responses (such as redirects). For the second level and higher,
     print these as well as the response metadata.
 
-    Level one is a shortcut for: --all --print={''.join(sorted(BASE_OUTPUT_OPTIONS))}
-    Level two is a shortcut for: --all --print={''.join(sorted(OUTPUT_OPTIONS))}
+    Level one is a shortcut for: --all --print={"".join(sorted(BASE_OUTPUT_OPTIONS))}
+    Level two is a shortcut for: --all --print={"".join(sorted(OUTPUT_OPTIONS))}
     """,
 )
 output_options.add_argument(
-    '--all',
+    "--all",
     default=False,
-    action='store_true',
-    short_help='Show any intermediary requests/responses.',
+    action="store_true",
+    short_help="Show any intermediary requests/responses.",
     help="""
     By default, only the final request/response is shown. Use this flag to show
     any intermediary requests/responses as well. Intermediary requests include
@@ -506,18 +532,18 @@ output_options.add_argument(
     """,
 )
 output_options.add_argument(
-    '--history-print',
-    '-P',
-    dest='output_options_history',
-    metavar='WHAT',
+    "--history-print",
+    "-P",
+    dest="output_options_history",
+    metavar="WHAT",
     help=Qualifiers.SUPPRESS,
 )
 output_options.add_argument(
-    '--stream',
-    '-S',
-    action='store_true',
+    "--stream",
+    "-S",
+    action="store_true",
     default=False,
-    short_help='Always stream the response body by line, i.e., behave like `tail -f`.',
+    short_help="Always stream the response body by line, i.e., behave like `tail -f`.",
     help="""
     Always stream the response body by line, i.e., behave like `tail -f'.
 
@@ -533,12 +559,12 @@ output_options.add_argument(
     """,
 )
 output_options.add_argument(
-    '--output',
-    '-o',
-    type=FileType('a+b'),
-    dest='output_file',
-    metavar='FILE',
-    short_help='Save output to FILE instead of stdout.',
+    "--output",
+    "-o",
+    type=FileType("a+b"),
+    dest="output_file",
+    metavar="FILE",
+    short_help="Save output to FILE instead of stdout.",
     help="""
     Save output to FILE instead of stdout. If --download is also set, then only
     the response body is saved to FILE. Other parts of the HTTP exchange are
@@ -548,11 +574,11 @@ output_options.add_argument(
 )
 
 output_options.add_argument(
-    '--download',
-    '-d',
-    action='store_true',
+    "--download",
+    "-d",
+    action="store_true",
     default=False,
-    short_help='Download the body to a file instead of printing it to stdout.',
+    short_help="Download the body to a file instead of printing it to stdout.",
     help="""
     Do not print the response body to stdout. Rather, download it and store it
     in a file. The filename is guessed unless specified with --output
@@ -561,12 +587,12 @@ output_options.add_argument(
     """,
 )
 output_options.add_argument(
-    '--continue',
-    '-c',
-    dest='download_resume',
-    action='store_true',
+    "--continue",
+    "-c",
+    dest="download_resume",
+    action="store_true",
     default=False,
-    short_help='Resume an interrupted download (--output needs to be specified).',
+    short_help="Resume an interrupted download (--output needs to be specified).",
     help="""
     Resume an interrupted download. Note that the --output option needs to be
     specified as well.
@@ -574,11 +600,11 @@ output_options.add_argument(
     """,
 )
 output_options.add_argument(
-    '--quiet',
-    '-q',
-    action='count',
+    "--quiet",
+    "-q",
+    action="count",
     default=0,
-    short_help='Do not print to stdout or stderr, except for errors and warnings when provided once.',
+    short_help="Do not print to stdout or stderr, except for errors and warnings when provided once.",
     help="""
     Do not print to stdout or stderr, except for errors and warnings when provided once.
     Provide twice to suppress warnings as well.
@@ -593,16 +619,16 @@ output_options.add_argument(
 #######################################################################
 
 session_name_validator = SessionNameValidator(
-    'Session name contains invalid characters.'
+    "Session name contains invalid characters."
 )
 
-sessions = options.add_group('Sessions', is_mutually_exclusive=True)
+sessions = options.add_group("Sessions", is_mutually_exclusive=True)
 
 sessions.add_argument(
-    '--session',
-    metavar='SESSION_NAME_OR_PATH',
+    "--session",
+    metavar="SESSION_NAME_OR_PATH",
     type=session_name_validator,
-    short_help='Create, or reuse and update a session.',
+    short_help="Create, or reuse and update a session.",
     help="""
     Create, or reuse and update a session. Within a session, custom headers,
     auth credential, as well as any cookies sent by the server persist between
@@ -618,10 +644,10 @@ sessions.add_argument(
     """,
 )
 sessions.add_argument(
-    '--session-read-only',
-    metavar='SESSION_NAME_OR_PATH',
+    "--session-read-only",
+    metavar="SESSION_NAME_OR_PATH",
     type=session_name_validator,
-    short_help='Create or read a session without updating it',
+    short_help="Create or read a session without updating it",
     help="""
     Create or read a session without updating it form the request/response
     exchange.
@@ -649,24 +675,23 @@ def format_auth_help(auth_plugins_mapping, *, isolation_mode: bool = False):
             for auth_plugin in auth_plugins
             if issubclass(auth_plugin, BuiltinAuthPlugin)
         ]
-        text += '\n'
-        text += 'To see all available auth types on your system, including ones installed via plugins, run:\n\n'
-        text += '    $ http --auth-type'
+        text += "\n"
+        text += "To see all available auth types on your system, including ones installed via plugins, run:\n\n"
+        text += "    $ http --auth-type"
 
-    auth_types = '\n\n    '.join(
+    auth_types = "\n\n    ".join(
         '"{type}": {name}{package}{description}'.format(
             type=plugin.auth_type,
             name=plugin.name,
             package=(
-                ''
+                ""
                 if issubclass(plugin, BuiltinAuthPlugin)
-                else f' (provided by {plugin.package_name})'
+                else f" (provided by {plugin.package_name})"
             ),
             description=(
-                ''
+                ""
                 if not plugin.description
-                else '\n      '
-                     + ('\n      '.join(textwrap.wrap(plugin.description)))
+                else "\n      " + ("\n      ".join(textwrap.wrap(plugin.description)))
             ),
         )
         for plugin in auth_plugins
@@ -678,14 +703,14 @@ def format_auth_help(auth_plugins_mapping, *, isolation_mode: bool = False):
     )
 
 
-authentication = options.add_group('Authentication')
+authentication = options.add_group("Authentication")
 
 authentication.add_argument(
-    '--auth',
-    '-a',
+    "--auth",
+    "-a",
     default=None,
-    metavar='USER[:PASS] | TOKEN',
-    short_help='Credentials for the selected (-A) authentication method.',
+    metavar="USER[:PASS] | TOKEN",
+    short_help="Credentials for the selected (-A) authentication method.",
     help="""
     For username/password based authentication mechanisms (e.g
     basic auth or digest auth) if only the username is provided
@@ -694,42 +719,42 @@ authentication.add_argument(
     """,
 )
 authentication.add_argument(
-    '--auth-type',
-    '-A',
-    action='lazy_choices',
+    "--auth-type",
+    "-A",
+    action="lazy_choices",
     default=None,
     getter=plugin_manager.get_auth_plugin_mapping,
     sort=True,
     cache=False,
-    short_help='The authentication mechanism to be used.',
+    short_help="The authentication mechanism to be used.",
     help_formatter=format_auth_help,
 )
 authentication.add_argument(
-    '--ignore-netrc',
+    "--ignore-netrc",
     default=False,
-    action='store_true',
-    short_help='Ignore credentials from .netrc.'
+    action="store_true",
+    short_help="Ignore credentials from .netrc.",
 )
 
 #######################################################################
 # Network
 #######################################################################
 
-network = options.add_group('Network')
+network = options.add_group("Network")
 
 network.add_argument(
-    '--offline',
+    "--offline",
     default=False,
-    action='store_true',
-    short_help='Build the request and print it but don’t actually send it.'
+    action="store_true",
+    short_help="Build the request and print it but don’t actually send it.",
 )
 network.add_argument(
-    '--proxy',
+    "--proxy",
     default=[],
-    action='append',
-    metavar='PROTOCOL:PROXY_URL',
+    action="append",
+    metavar="PROTOCOL:PROXY_URL",
     type=KeyValueArgType(SEPARATOR_PROXY),
-    short_help='String mapping of protocol to the URL of the proxy.',
+    short_help="String mapping of protocol to the URL of the proxy.",
     help="""
     String mapping protocol to the URL of the proxy
     (e.g. http:http://foo.bar:3128). You can specify multiple proxies with
@@ -739,39 +764,39 @@ network.add_argument(
     """,
 )
 network.add_argument(
-    '--follow',
-    '-F',
+    "--follow",
+    "-F",
     default=False,
-    action='store_true',
-    short_help='Follow 30x Location redirects.'
+    action="store_true",
+    short_help="Follow 30x Location redirects.",
 )
 
 network.add_argument(
-    '--max-redirects',
+    "--max-redirects",
     type=int,
     default=30,
-    short_help='The maximum number of redirects that should be followed (with --follow).',
+    short_help="The maximum number of redirects that should be followed (with --follow).",
     help="""
     By default, requests have a limit of 30 redirects (works with --follow).
 
     """,
 )
 network.add_argument(
-    '--max-headers',
+    "--max-headers",
     type=int,
     default=0,
     short_help=(
-        'The maximum number of response headers to be read before '
-        'giving up (default 0, i.e., no limit).'
-    )
+        "The maximum number of response headers to be read before "
+        "giving up (default 0, i.e., no limit)."
+    ),
 )
 
 network.add_argument(
-    '--timeout',
+    "--timeout",
     type=float,
     default=0,
-    metavar='SECONDS',
-    short_help='The connection timeout of the request in seconds.',
+    metavar="SECONDS",
+    short_help="The connection timeout of the request in seconds.",
     help="""
     The connection timeout of the request in seconds.
     The default value is 0, i.e., there is no timeout limit.
@@ -783,10 +808,10 @@ network.add_argument(
     """,
 )
 network.add_argument(
-    '--check-status',
+    "--check-status",
     default=False,
-    action='store_true',
-    short_help='Exit with an error status code if the server replies with an error.',
+    action="store_true",
+    short_help="Exit with an error status code if the server replies with an error.",
     help="""
     By default, HTTPie exits with 0 when no network or other fatal errors
     occur. This flag instructs HTTPie to also check the HTTP status code and
@@ -800,30 +825,30 @@ network.add_argument(
     """,
 )
 network.add_argument(
-    '--path-as-is',
+    "--path-as-is",
     default=False,
-    action='store_true',
-    short_help='Bypass dot segment (/../ or /./) URL squashing.'
+    action="store_true",
+    short_help="Bypass dot segment (/../ or /./) URL squashing.",
 )
 network.add_argument(
-    '--chunked',
+    "--chunked",
     default=False,
-    action='store_true',
+    action="store_true",
     short_help=(
-        'Enable streaming via chunked transfer encoding. '
-        'The Transfer-Encoding header is set to chunked.'
-    )
+        "Enable streaming via chunked transfer encoding. "
+        "The Transfer-Encoding header is set to chunked."
+    ),
 )
 
 #######################################################################
 # SSL
 #######################################################################
 
-ssl = options.add_group('SSL')
+ssl = options.add_group("SSL")
 
 ssl.add_argument(
-    '--verify',
-    default='yes',
+    "--verify",
+    default="yes",
     short_help='If "no", skip SSL verification. If a file path, use it as a CA bundle.',
     help="""
     Set to "no" (or "false") to skip checking the host's SSL certificate.
@@ -833,10 +858,10 @@ ssl.add_argument(
     """,
 )
 ssl.add_argument(
-    '--ssl',
-    dest='ssl_version',
+    "--ssl",
+    dest="ssl_version",
     choices=sorted(AVAILABLE_SSL_VERSION_ARG_MAPPING.keys()),
-    short_help='The desired protocol version to used.',
+    short_help="The desired protocol version to used.",
     help="""
     The desired protocol version to use. This will default to
     SSL v2.3 which will negotiate the highest protocol that both
@@ -852,8 +877,8 @@ CIPHERS_CURRENT_DEFAULTS = (
     See `http --help` for the default ciphers list on you system.
 
     """
-    if IS_MAN_PAGE else
-    f"""
+    if IS_MAN_PAGE
+    else f"""
     By default, the following ciphers are used on your system:
 
     {DEFAULT_SSL_CIPHERS_STRING}
@@ -861,21 +886,21 @@ CIPHERS_CURRENT_DEFAULTS = (
     """
 )
 ssl.add_argument(
-    '--ciphers',
-    short_help='A string in the OpenSSL cipher list format.',
+    "--ciphers",
+    short_help="A string in the OpenSSL cipher list format.",
     help=f"""
 
     A string in the OpenSSL cipher list format.
 
     {CIPHERS_CURRENT_DEFAULTS}
 
-    """
+    """,
 )
 ssl.add_argument(
-    '--cert',
+    "--cert",
     default=None,
     type=readable_file_arg,
-    short_help='Specifies a local cert to use as the client-side SSL certificate.',
+    short_help="Specifies a local cert to use as the client-side SSL certificate.",
     help="""
     You can specify a local cert to use as client side SSL certificate.
     This file may either contain both private key and certificate or you may
@@ -884,10 +909,10 @@ ssl.add_argument(
     """,
 )
 ssl.add_argument(
-    '--cert-key',
+    "--cert-key",
     default=None,
     type=readable_file_arg,
-    short_help='The private key to use with SSL. Only needed if --cert is given.',
+    short_help="The private key to use with SSL. Only needed if --cert is given.",
     help="""
     The private key to use with SSL. Only needed if --cert is given and the
     certificate file does not contain the private key.
@@ -896,63 +921,63 @@ ssl.add_argument(
 )
 
 ssl.add_argument(
-    '--cert-key-pass',
+    "--cert-key-pass",
     default=None,
     type=SSLCredentials,
-    short_help='The passphrase to be used to with the given private key.',
+    short_help="The passphrase to be used to with the given private key.",
     help="""
     The passphrase to be used to with the given private key. Only needed if --cert-key
     is given and the key file requires a passphrase.
     If not provided, you’ll be prompted interactively.
-    """
+    """,
 )
 
 #######################################################################
 # Troubleshooting
 #######################################################################
 
-troubleshooting = options.add_group('Troubleshooting')
+troubleshooting = options.add_group("Troubleshooting")
 troubleshooting.add_argument(
-    '--ignore-stdin',
-    '-I',
-    action='store_true',
+    "--ignore-stdin",
+    "-I",
+    action="store_true",
     default=False,
-    short_help='Do not attempt to read stdin'
+    short_help="Do not attempt to read stdin",
 )
 troubleshooting.add_argument(
-    '--help',
-    action='help',
+    "--help",
+    action="help",
     default=Qualifiers.SUPPRESS,
-    short_help='Show this help message and exit.',
+    short_help="Show this help message and exit.",
 )
 troubleshooting.add_argument(
-    '--manual',
-    action='manual',
+    "--manual",
+    action="manual",
     default=Qualifiers.SUPPRESS,
-    short_help='Show the full manual.',
+    short_help="Show the full manual.",
 )
 troubleshooting.add_argument(
-    '--version',
-    action='version',
+    "--version",
+    action="version",
     version=__version__,
-    short_help='Show version and exit.',
+    short_help="Show version and exit.",
 )
 troubleshooting.add_argument(
-    '--traceback',
-    action='store_true',
+    "--traceback",
+    action="store_true",
     default=False,
-    short_help='Prints the exception traceback should one occur.',
+    short_help="Prints the exception traceback should one occur.",
 )
 troubleshooting.add_argument(
-    '--default-scheme',
-    default='http',
-    short_help='The default scheme to use if not specified in the URL.'
+    "--default-scheme",
+    default="http",
+    short_help="The default scheme to use if not specified in the URL.",
 )
 troubleshooting.add_argument(
-    '--debug',
-    action='store_true',
+    "--debug",
+    action="store_true",
     default=False,
-    short_help='Print useful diagnostic information for bug reports.',
+    short_help="Print useful diagnostic information for bug reports.",
     help="""
     Prints the exception traceback should one occur, as well as other
     information useful for debugging HTTPie itself and for reporting bugs.
