@@ -86,7 +86,7 @@ def parse_body(raw_text: str) -> bytes :
     '''
     parse the body of the .http file
     '''
-    return b""
+    return raw_text
 
 def parse_single_request(raw_text: str) -> HttpFileRequest | None:
     '''Parse a single request from .http file format to HttpFileRequest '''

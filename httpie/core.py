@@ -17,7 +17,7 @@ from .cli.nested_json import NestedJSONSyntaxError
 from .client import collect_messages
 from .context import Environment, LogLevel
 from .downloads import Downloader
-from .http_parser import *
+from .http_parser import parse_single_request, replace_global, split_requests, get_dependencies
 from .models import (
     RequestsMessageKind,
     OutputOptions
@@ -274,14 +274,13 @@ def program(args: argparse.Namespace, env: Environment) -> ExitStatus:
                 args.output_file.close()
     
     if args.http_file:
-        
         http_file = Path(args.url)
         if not http_file.exists():
             raise FileNotFoundError(f"File not found: {args.url}")
         if not http_file.is_file():
             raise IsADirectoryError(f"Path is not a file: {args.url}")
         http_contents = http_file.read_text()
-        
+
         raw_requests = split_requests(replace_global(http_contents))
         raw_requests = [req.strip() for req in raw_requests if req.strip()]
         parsed_requests = []
@@ -302,7 +301,7 @@ def program(args: argparse.Namespace, env: Environment) -> ExitStatus:
             args.url = new_req.url
             args.method = new_req.method
             args.headers = new_req.headers
-            args.body = new_req.body
+            args.data = new_req.body
 
             response = actual_program(args, env)
             if new_req.name is not None:
