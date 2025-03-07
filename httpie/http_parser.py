@@ -32,7 +32,7 @@ def split_requests(http_file_contents: str) -> List[str]:
 
 
 def replace_dependencies(raw_http_request: str, responses: Dict[str, Iterable[RequestsMessage]]) -> str | None:
-    """Returns a list of all unique request names that must be fulfilled before this request can be sent."""
+    """Replaces the dependencies dependent variables in the raw request with their values"""
     def replace(match: Match[str]):
         """gives the string which should replaces the one given as a parameter"""
         str = match.group(0)
