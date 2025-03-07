@@ -3,7 +3,7 @@ import os
 import platform
 import sys
 import socket
-from typing import List, Optional, Union, Callable, Iterable, Dict
+from typing import List, Optional, Union, Callable, Iterable, Dict, Tuple
 
 import requests
 from pygments import __version__ as pygments_version
@@ -175,7 +175,7 @@ def program(args: argparse.Namespace, env: Environment) -> ExitStatus:
 
     """
 
-    def actual_program(args: argparse.Namespace, env: Environment) -> tuple[ExitStatus, Iterable[RequestsMessage]]:
+    def actual_program(args: argparse.Namespace, env: Environment) -> Tuple[ExitStatus, Iterable[RequestsMessage]]:
         # TODO: Refactor and drastically simplify, especially so that the separator logic is elsewhere.
         exit_status = ExitStatus.SUCCESS
         downloader = None
