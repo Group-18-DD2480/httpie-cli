@@ -277,7 +277,7 @@ def program(args: argparse.Namespace, env: Environment) -> ExitStatus:
                         f"Incomplete download: size={downloader.status.total_size};"
                         f" downloaded={downloader.status.downloaded}"
                     )
-            return exit_status
+            return exit_status, messages
 
         finally:
             if downloader and not downloader.finished:
@@ -322,7 +322,7 @@ def program(args: argparse.Namespace, env: Environment) -> ExitStatus:
         all_success = all(r is ExitStatus.SUCCESS for r in Exit_status)
         return ExitStatus.SUCCESS if all_success else ExitStatus.ERROR
 
-    return actual_program(args, env)
+    return actual_program(args, env)[0]
 
 
 def print_debug_info(env: Environment):
