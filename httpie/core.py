@@ -5,7 +5,7 @@ import random
 import string
 import sys
 import socket
-from typing import List, Optional, Union, Callable, Iterable
+from typing import List, Optional, Union, Callable, Iterable, Dict
 
 import requests
 from pygments import __version__ as pygments_version
@@ -37,6 +37,7 @@ from .utils import unwrap_context
 from .internal.update_warnings import check_updates
 from .internal.daemon_runner import is_daemon_mode, run_daemon_task
 from pathlib import Path
+
 
 # noinspection PyDefaultArgument
 def raw_main(
@@ -298,11 +299,10 @@ def program(args: argparse.Namespace, env: Environment) -> ExitStatus:
         raw_requests = [req.strip() for req in raw_requests if req.strip()]
         parsed_requests = []
         req_names = []
-        responses:dict[str,RequestsMessage] = {}
-        Exit_status= []
+        responses: Dict[str, RequestsMessage] = {}
+        Exit_status = []
 
         for raw_req in raw_requests:
-            
             dependency_free_req = replace_dependencies(raw_req, responses)
 
             new_req = parse_single_request(dependency_free_req)
@@ -315,9 +315,6 @@ def program(args: argparse.Namespace, env: Environment) -> ExitStatus:
             args.method = new_req.method
             args.headers = new_req.headers
             args.data = new_req.body
-
-            
-                
 
             status, response = actual_program(args, env)
             Exit_status.append(status)

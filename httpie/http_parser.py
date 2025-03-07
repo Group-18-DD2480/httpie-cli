@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import re
 from re import Match
 from .client import RequestsMessage
-from typing import Iterable
+from typing import Iterable, Dict, List
 import json
 from jsonpath_ng import parse as jsonpath_parse
 from lxml import etree
@@ -13,12 +13,12 @@ from lxml import etree
 class HttpFileRequest:
     method: str
     url: str
-    headers: dict | None
+    headers: Dict | None
     body: bytes | None
     name: str | None
 
 
-def split_requests(http_file_contents: str) -> list[str]:
+def split_requests(http_file_contents: str) -> List[str]:
     """Splits an HTTP file into individual requests but keeps the '###' in each request."""
     parts = re.split(r"(^###.*)", http_file_contents, flags=re.MULTILINE)
     requests = []
@@ -31,30 +31,27 @@ def split_requests(http_file_contents: str) -> list[str]:
     return requests
 
 
-def replace_dependencies(raw_http_request: str, responses: dict[str, Iterable[RequestsMessage]]) -> str | None:
+def replace_dependencies(raw_http_request: str, responses: Dict[str, Iterable[RequestsMessage]]) -> str | None:
     """Returns a list of all unique request names that must be fulfilled before this request can be sent."""
-    def replace(match:Match[str]):
+    def replace(match: Match[str]):
         """gives the string which should replaces the one given as a parameter"""
         str = match.group(0)
-        print(str)
         var = str.lstrip("{").rstrip("}")
         splitter = re.match(r"(?P<name>\w+)\.(?P<type>request|response)\.(?P<section>body|headers)\.(?P<extractor>.+)", var)
         if not splitter:
             raise ValueError(f"Difficulties replacing {str} in {raw_http_request}")
-        dict = splitter.groupdict()
-        req_name = dict["name"]
-        req_type = dict["type"]  
-        section = dict["section"]
-        extractor = dict["extractor"]
+        Dict = splitter.groupDict()
+        req_name = Dict["name"]
+        req_type = Dict["type"]
+        section = Dict["section"]
+        extractor = Dict["extractor"]
 
         if responses.get(req_name) is None:
             raise ValueError(f"{req_name} is not an existing request's name")
         if req_type == "request":
             msg = responses[req_name][0]
         elif req_type == "response":
-            msg:RequestsMessage = responses[req_name][1]
-        
-        
+            msg: RequestsMessage = responses[req_name][1]
         if section == "body":
             if extractor == "*":
                 return msg.body  # Return full body
@@ -74,14 +71,10 @@ def replace_dependencies(raw_http_request: str, responses: dict[str, Iterable[Re
                     return None  # Not a valid XML
 
         elif section == "headers":
-            print(msg.headers[extractor])
             return msg.headers[extractor]
-        
-        return 
+        raise ValueError(f"Incoherent request")
     pattern = r"\{\{(.*?)\}\}"
     return re.sub(pattern, replace, raw_http_request)
-
-    
 
 
 def get_name(raw_http_request: str) -> str | None:
@@ -114,7 +107,7 @@ def replace_global(http_file_contents_raw: str) -> str:
     return http_file_contents_cooking
 
 
-def extract_headers(raw_text: list[str]) -> dict:
+def extract_headers(raw_text: List[str]) -> Dict:
     """
     Extract the headers of the .http file
 
@@ -122,7 +115,7 @@ def extract_headers(raw_text: list[str]) -> dict:
         raw_text: the lines of the .http file containing the headers
 
     Returns:
-        dict: containing the parsed headers
+        Dict: containing the parsed headers
     """
     headers = {}
 
