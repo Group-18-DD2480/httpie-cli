@@ -1,19 +1,24 @@
 from __future__ import annotations
 from dataclasses import dataclass
 import re
+from re import Match
+from .client import RequestsMessage
+from typing import Iterable, Dict, List
+import json
+from jsonpath_ng import parse as jsonpath_parse
+from lxml import etree
 
 
 @dataclass
 class HttpFileRequest:
     method: str
     url: str
-    headers: dict | None
+    headers: Dict | None
     body: bytes | None
-    dependencies: list[HttpFileRequest] | None
     name: str | None
 
 
-def split_requests(http_file_contents: str) -> list[str]:
+def split_requests(http_file_contents: str) -> List[str]:
     """Splits an HTTP file into individual requests but keeps the '###' in each request."""
     parts = re.split(r"(^###.*)", http_file_contents, flags=re.MULTILINE)
     requests = []
@@ -24,24 +29,52 @@ def split_requests(http_file_contents: str) -> list[str]:
         requests.append(f"{header}\n{body}")
 
     return requests
-    return requests
 
 
-def get_dependencies(raw_http_request: str, poss_names: list[str]) -> list[str] | None:
-    """Returns a list of all unique request names that must be fulfilled before this request can be sent."""
+def replace_dependencies(raw_http_request: str, responses: Dict[str, Iterable[RequestsMessage]]) -> str | None:
+    """Replaces the dependencies dependent variables in the raw request with their values"""
+    def replace(match: Match[str]):
+        """gives the string which should replaces the one given as a parameter"""
+        str = match.group(0)
+        var = str.lstrip("{").rstrip("}")
+        splitter = re.match(r"(?P<name>\w+)\.(?P<type>request|response)\.(?P<section>body|headers)\.(?P<extractor>.+)", var)
+        if not splitter:
+            raise ValueError(f"Difficulties replacing {str} in {raw_http_request}")
+        Dict = splitter.groupdict()
+        req_name = Dict["name"]
+        req_type = Dict["type"]
+        section = Dict["section"]
+        extractor = Dict["extractor"]
+
+        if responses.get(req_name) is None:
+            raise ValueError(f"{req_name} is not an existing request's name")
+        if req_type == "request":
+            msg = responses[req_name][0]
+        elif req_type == "response":
+            msg: RequestsMessage = responses[req_name][1]
+        if section == "body":
+            if extractor == "*":
+                return msg.body  # Return full body
+            elif extractor.startswith("$."):  # JSONPath
+                try:
+                    json_data = msg.json()  # Convert response to JSON
+                    jsonpath_expr = jsonpath_parse(extractor)
+                    parsed_data = jsonpath_expr.find(json_data)
+                    return [matched.value for matched in parsed_data] if parsed_data else None
+                except json.JSONDecodeError:
+                    return None  # Not a valid JSON
+            elif extractor.startswith("/"):  # XPath
+                try:
+                    xml_tree = etree.fromstring(msg.content)  # Parse XML
+                    return xml_tree.xpath(extractor)
+                except etree.XMLSyntaxError:
+                    return None  # Not a valid XML
+
+        elif section == "headers":
+            return msg.headers[extractor]
+        raise ValueError(f"Incoherent request {str}")
     pattern = r"\{\{(.*?)\}\}"
-    matches = re.findall(pattern, raw_http_request)
-
-    if not matches:
-        return None
-
-    names = [re.findall(r"^([A-Za-z0-9_]+).", match, re.MULTILINE) for match in matches]
-    flat_names = list({match for sublist in names for match in sublist})  # Remove duplicates using set comprehension
-
-    if not all(name in poss_names for name in flat_names):
-        return None  # Returns None if any dependency is not found in possible names
-
-    return flat_names
+    return re.sub(pattern, replace, raw_http_request)
 
 
 def get_name(raw_http_request: str) -> str | None:
@@ -74,7 +107,7 @@ def replace_global(http_file_contents_raw: str) -> str:
     return http_file_contents_cooking
 
 
-def extract_headers(raw_text: list[str]) -> dict:
+def extract_headers(raw_text: List[str]) -> Dict:
     """
     Extract the headers of the .http file
 
@@ -82,7 +115,7 @@ def extract_headers(raw_text: list[str]) -> dict:
         raw_text: the lines of the .http file containing the headers
 
     Returns:
-        dict: containing the parsed headers
+        Dict: containing the parsed headers
     """
     headers = {}
 
@@ -130,6 +163,5 @@ def parse_single_request(raw_text: str) -> HttpFileRequest:
         url=url,
         headers=extract_headers(raw_headers),
         body=parse_body("\n".join(raw_body)),
-        dependencies={},
         name=get_name(raw_text)
     )

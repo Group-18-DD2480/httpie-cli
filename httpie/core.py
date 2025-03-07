@@ -1,11 +1,9 @@
 import argparse
 import os
 import platform
-import random
-import string
 import sys
 import socket
-from typing import List, Optional, Union, Callable
+from typing import List, Optional, Union, Callable, Iterable, Dict, Tuple
 
 import requests
 from pygments import __version__ as pygments_version
@@ -14,14 +12,14 @@ from requests import __version__ as requests_version
 from . import __version__ as httpie_version
 from .cli.constants import OUT_REQ_BODY
 from .cli.nested_json import NestedJSONSyntaxError
-from .client import collect_messages
+from .client import collect_messages, RequestsMessage
 from .context import Environment, LogLevel
 from .downloads import Downloader
 from .http_parser import (
     parse_single_request,
     replace_global,
     split_requests,
-    get_dependencies,
+    replace_dependencies
 )
 from .models import RequestsMessageKind, OutputOptions
 from .output.models import ProcessingOptions
@@ -177,7 +175,7 @@ def program(args: argparse.Namespace, env: Environment) -> ExitStatus:
 
     """
 
-    def actual_program(args: argparse.Namespace, env: Environment) -> ExitStatus:
+    def actual_program(args: argparse.Namespace, env: Environment) -> Tuple[ExitStatus, Iterable[RequestsMessage]]:
         # TODO: Refactor and drastically simplify, especially so that the separator logic is elsewhere.
         exit_status = ExitStatus.SUCCESS
         downloader = None
@@ -279,7 +277,7 @@ def program(args: argparse.Namespace, env: Environment) -> ExitStatus:
                         f"Incomplete download: size={downloader.status.total_size};"
                         f" downloaded={downloader.status.downloaded}"
                     )
-            return exit_status
+            return exit_status, messages
 
         finally:
             if downloader and not downloader.finished:
@@ -299,32 +297,32 @@ def program(args: argparse.Namespace, env: Environment) -> ExitStatus:
         raw_requests = [req.strip() for req in raw_requests if req.strip()]
         parsed_requests = []
         req_names = []
-        responses = {}
+        responses: Dict[str, RequestsMessage] = {}
+        Exit_status = []
 
         for raw_req in raw_requests:
-            new_req = parse_single_request(raw_req)
+            dependency_free_req = replace_dependencies(raw_req, responses)
+
+            new_req = parse_single_request(dependency_free_req)
             if new_req is None:
                 continue
-            new_req.dependencies = get_dependencies(raw_req, req_names)
             if new_req.name is not None:
                 req_names.append(new_req.name)
-            else:
-                letters = string.ascii_letters + string.digits
-                new_req.name = "".join(random.choice(letters) for _ in range(16))
             parsed_requests.append(new_req)
             args.url = new_req.url
             args.method = new_req.method
             args.headers = new_req.headers
             args.data = new_req.body
 
-            response = actual_program(args, env)
+            status, response = actual_program(args, env)
+            Exit_status.append(status)
             if new_req.name is not None:
                 responses[new_req.name] = response
 
-        all_success = all(r is ExitStatus.SUCCESS for r in responses.values())
+        all_success = all(r is ExitStatus.SUCCESS for r in Exit_status)
         return ExitStatus.SUCCESS if all_success else ExitStatus.ERROR
 
-    return actual_program(args, env)
+    return actual_program(args, env)[0]
 
 
 def print_debug_info(env: Environment):
