@@ -116,7 +116,8 @@ def test_replace_dependencies_no_placeholders():
     the function correctly doesn't change anything.
     """
     raw_request = """GET /users"""
-    assert replace_dependencies(raw_request, None) is """GET /users"""
+    assert replace_dependencies(raw_request, None) == """GET /users"""
+
 
 def test_replace_dependencies_invalid_dependency():
     """
@@ -124,7 +125,7 @@ def test_replace_dependencies_invalid_dependency():
     not in the provided possible_names list, the function correctly raises an ValueError.
     """
     raw_request = """DELETE /items/{{InvalidRequest}}"""
-    responses = {"Request1":None, "Request2": None}
+    responses = {"Request1": None, "Request2": None}
     with pytest.raises(ValueError):
         replace_dependencies(raw_request, responses)
 
@@ -135,17 +136,16 @@ def test_replace_dependencies_Req_single():
     from a request and returned in a list.
     """
     raw_request = """GET /update/{{Request1.request.headers.id}}"""
-    
+
     url = "https://api.example.com"
-    session = requests.Session()
     request = requests.Request('GET', url)
-    prepared_request = session.prepare_request(request)
     response = None
 
     responses = {"Request1": [request, response]}
     request.headers["id"] = str(1)
 
     assert replace_dependencies(raw_request, responses) == """GET /update/1"""
+
 
 def test_replace_dependencies_PreReq_single():
     """
@@ -164,18 +164,17 @@ def test_replace_dependencies_PreReq_single():
     prepared_request.headers["id"] = str(1)
 
     assert replace_dependencies(raw_request, responses) == """GET /update/1"""
-    
+
+
 def test_replace_multiple_dependencies():
     """
     This test verifies that multiple dependencies are correctly identified
     and replaced in the request.
     """
     raw_request = """GET /update/{{Request1.request.headers.id}}/{{Request1.request.headers.name}}"""
-    
+
     url = "https://api.example.com"
-    session = requests.Session()
     request = requests.Request('GET', url)
-    prepared_request = session.prepare_request(request)
     response = None
 
     responses = {"Request1": [request, response]}
@@ -184,15 +183,17 @@ def test_replace_multiple_dependencies():
 
     assert replace_dependencies(raw_request, responses) == """GET /update/1/Jack"""
 
+
 def test_replace_dependencies_empty_request():
     """
     This test checks that an empty request string returns None
     since there are no placeholders.
     """
     raw_request = ""
-    assert replace_dependencies(raw_request, None) is ""
+    assert replace_dependencies(raw_request, None) == ""
 
 # TESTS FOR get_name --> REQ_003
+
 
 def test_get_name_with_hash_comment():
     """

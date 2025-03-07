@@ -40,7 +40,7 @@ def replace_dependencies(raw_http_request: str, responses: Dict[str, Iterable[Re
         splitter = re.match(r"(?P<name>\w+)\.(?P<type>request|response)\.(?P<section>body|headers)\.(?P<extractor>.+)", var)
         if not splitter:
             raise ValueError(f"Difficulties replacing {str} in {raw_http_request}")
-        Dict = splitter.groupDict()
+        Dict = splitter.groupdict()
         req_name = Dict["name"]
         req_type = Dict["type"]
         section = Dict["section"]
@@ -72,7 +72,7 @@ def replace_dependencies(raw_http_request: str, responses: Dict[str, Iterable[Re
 
         elif section == "headers":
             return msg.headers[extractor]
-        raise ValueError(f"Incoherent request")
+        raise ValueError(f"Incoherent request {str}")
     pattern = r"\{\{(.*?)\}\}"
     return re.sub(pattern, replace, raw_http_request)
 
